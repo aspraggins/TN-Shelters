@@ -281,11 +281,8 @@
       <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input id="search-input" type="search" placeholder="Search by name, city, county…" oninput="onSearch()" aria-label="Search shelters by name, city, or county" autocomplete="off">
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-      <div id="loading-bar" role="progressbar" aria-label="Loading shelters" aria-valuetext="Loading" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;flex:1;overflow:hidden">
-        <div style="height:100%;width:40%;background:white;border-radius:2px;animation:loadbar 1.2s ease-in-out infinite"></div>
-      </div>
-      <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:auto"></div>
+    <div id="loading-bar" role="progressbar" aria-label="Loading shelters" aria-valuetext="Loading" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;overflow:hidden;margin-bottom:2px">
+      <div style="height:100%;width:40%;background:white;border-radius:2px;animation:loadbar 1.2s ease-in-out infinite"></div>
     </div>
   </header>
 
@@ -299,7 +296,10 @@
 
   <main id="list-section" aria-label="Open shelters">
     <div class="list-header">
-      <div class="list-count" id="list-count" aria-live="polite" aria-atomic="true">Loading…</div>
+      <div>
+        <div class="list-count" id="list-count" aria-live="polite" aria-atomic="true">Loading…</div>
+        <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px"></div>
+      </div>
       <div style="display:flex;align-items:center;gap:6px">
         <div class="active-filters" id="active-filters" aria-label="Active filters" aria-live="polite"></div>
         <button id="filter-toggle-btn" class="filter-btn" onclick="toggleFilterDrawer()" aria-expanded="false" aria-controls="filter-drawer" aria-label="Open shelter filters">

@@ -79,31 +79,51 @@
   #search-input:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(255,191,71,0.35); }
   #search-input::placeholder { color: var(--text3); }
 
-  /* Filter grid */
-  .filter-grid { padding-bottom: 6px; }
-  .fg-type-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 6px; }
+  /* Filter bar — always visible row */
+  .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+  .filter-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4);
+    color: white; border-radius: 20px; padding: 7px 13px;
+    font-size: 12px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap; min-height: 44px;
+  }
+  .filter-btn:hover { background: rgba(255,255,255,0.28); }
+  .filter-btn:focus-visible { outline: 3px solid var(--focus); }
+  .filter-btn.has-filter { background: white; border-color: white; color: var(--tema-blue); }
+  .filter-btn-icon { font-size: 14px; }
+  .active-filters { display: flex; gap: 5px; flex: 1; overflow: hidden; align-items: center; flex-wrap: nowrap; }
+  .active-chip {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.4);
+    color: white; border-radius: 12px; padding: 3px 8px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+    cursor: pointer;
+  }
+  .active-chip:hover { background: rgba(255,255,255,0.35); }
+  .active-chip-x { font-size: 13px; line-height: 1; opacity: 0.8; margin-left: 1px; }
+
+  /* Filter drawer */
+  #filter-drawer {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), padding 0.3s;
+    padding: 0 0;
+  }
+  #filter-drawer.open { max-height: 200px; padding: 8px 0 4px; }
+  .filter-grid { padding-bottom: 2px; }
+  .fg-type-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 8px; }
   .fgt {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
     cursor: pointer; user-select: none; opacity: 0.6; transition: opacity 0.15s, transform 0.15s;
-    background: none; border: none; padding: 2px 0;
-    border-radius: 8px;
+    background: none; border: none; padding: 2px 0; border-radius: 8px;
   }
   .fgt:hover { opacity: 0.85; }
   .fgt.active { opacity: 1; transform: scale(1.08); }
   .fgt:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; opacity: 1; }
-  .fgt-icon {
-    width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-    border: 2px solid transparent; transition: border-color 0.15s;
-  }
+  .fgt-icon { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.25); border: 2px solid transparent; transition: border-color 0.15s; }
   .fgt.active .fgt-icon { border-color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-  .fgt-label {
-    font-size: 9px; font-weight: 700; color: white;
-    text-align: center; line-height: 1.1; letter-spacing: 0.2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
-  }
-
-  /* Amenity toggles */
+  .fgt-label { font-size: 9px; font-weight: 700; color: white; text-align: center; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .fg-amenity-row { display: flex; gap: 6px; }
   .amenity-toggle {
     flex: 1; text-align: center; padding: 8px 4px;
@@ -261,13 +281,22 @@
       <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input id="search-input" type="search" placeholder="Search by name, city, county…" oninput="onSearch()" aria-label="Search shelters by name, city, or county" autocomplete="off">
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div id="loading-bar" role="progressbar" aria-label="Loading shelters" aria-valuetext="Loading" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;flex:1;margin-right:10px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div id="loading-bar" role="progressbar" aria-label="Loading shelters" aria-valuetext="Loading" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;flex:1;overflow:hidden">
         <div style="height:100%;width:40%;background:white;border-radius:2px;animation:loadbar 1.2s ease-in-out infinite"></div>
       </div>
       <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:auto"></div>
     </div>
-    <nav id="filter-grid" aria-label="Filter shelters by type and amenities"></nav>
+    <div class="filter-bar">
+      <button id="filter-toggle-btn" class="filter-btn" onclick="toggleFilterDrawer()" aria-expanded="false" aria-controls="filter-drawer" aria-label="Open shelter filters">
+        <svg class="filter-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Filter
+      </button>
+      <div class="active-filters" id="active-filters" aria-label="Active filters" aria-live="polite"></div>
+    </div>
+    <div id="filter-drawer" aria-hidden="true">
+      <nav id="filter-grid" aria-label="Filter shelters by type and amenities"></nav>
+    </div>
   </header>
 
   <div id="map-container" role="region" aria-label="Map showing shelter locations">
@@ -681,10 +710,61 @@ function haversine(la1,lo1,la2,lo2){
 }
 function r(d){return d*Math.PI/180;}
 
+function toggleFilterDrawer(forceClose=false) {
+  const drawer = document.getElementById('filter-drawer');
+  const btn    = document.getElementById('filter-toggle-btn');
+  const isOpen = drawer.classList.contains('open');
+  if (forceClose || isOpen) {
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden','true');
+    btn.setAttribute('aria-expanded','false');
+    btn.setAttribute('aria-label','Open shelter filters');
+  } else {
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden','false');
+    btn.setAttribute('aria-expanded','true');
+    btn.setAttribute('aria-label','Close shelter filters');
+  }
+}
+
+function updateActiveFilterBar() {
+  const bar = document.getElementById('active-filters');
+  const btn = document.getElementById('filter-toggle-btn');
+  const chips = [];
+
+  if (activeFilter !== 'all') {
+    const tc = TYPES[activeFilter];
+    chips.push({ label: tc ? tc.label : activeFilter, clear: () => {
+      document.querySelectorAll('.fgt').forEach(c=>{ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
+      const allBtn = document.querySelector('.fgt[aria-label="All Types"]');
+      if(allBtn){ allBtn.classList.add('active'); allBtn.setAttribute('aria-pressed','true'); }
+      activeFilter='all'; updateActiveFilterBar(); renderList();
+    }});
+  }
+  if (amenityFilter) {
+    const labels = { ada:'ADA', pets:'Pets OK', generator:'Backup Power' };
+    chips.push({ label: labels[amenityFilter] || amenityFilter, clear: () => {
+      document.querySelectorAll('.amenity-toggle').forEach(c=>{ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
+      amenityFilter=null; updateActiveFilterBar(); renderList();
+    }});
+  }
+
+  bar.innerHTML = chips.map((c,i) =>
+    `<button class="active-chip" onclick="(${c.clear.toString()})()" aria-label="Remove filter: ${c.label}">
+      ${c.label}<span class="active-chip-x" aria-hidden="true">×</span>
+    </button>`
+  ).join('');
+
+  btn.classList.toggle('has-filter', chips.length > 0);
+}
+
 function setFilter(el,f){
   document.querySelectorAll('.fgt').forEach(c=>{ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
   el.classList.add('active'); el.setAttribute('aria-pressed','true');
-  activeFilter=f; renderList();
+  activeFilter=f;
+  updateActiveFilterBar();
+  renderList();
+  if(f !== 'all') toggleFilterDrawer(true); // auto-close on selection
 }
 function setAmenity(el,a){
   if(amenityFilter===a){
@@ -694,7 +774,9 @@ function setAmenity(el,a){
     document.querySelectorAll('.amenity-toggle').forEach(c=>{ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
     el.classList.add('active'); el.setAttribute('aria-pressed','true');
     amenityFilter=a;
+    toggleFilterDrawer(true); // auto-close on selection
   }
+  updateActiveFilterBar();
   renderList();
 }
 function onSearch(){searchTerm=document.getElementById('search-input').value.toLowerCase();renderList();}

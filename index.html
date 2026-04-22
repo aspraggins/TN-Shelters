@@ -662,7 +662,7 @@ function refreshMarkers(){
     const tc=TYPES[s.type]||{color:'#666',emoji:'📍',label:s.type};
     const mk=L.marker([s.lat,s.lng],{icon:makeIcon(s)}).addTo(map)
       .bindPopup(`<div class="pop"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0">${ICON_SVG[s.type]||''}</div><div class="pop-name">${s.name}</div></div><div class="pop-type" style="color:${tc.color}">${tc.label}</div></div>`,{closeButton:false,offset:[0,-4]})
-      .on('click',()=>selectShelter(String(s.id)));
+      .on('click',()=>selectShelter(s.id));
     markers[String(s.id)]=mk;
   });
 }
@@ -679,11 +679,22 @@ function makeIcon(s, sel=false){
   });
 }
 
-function selectShelter(i){
-  const s = renderedList[i]; if(!s) return;
-  if(selectedId && markers[selectedId]){ const o=getShelter(selectedId); if(o) markers[selectedId].setIcon(makeIcon(o,false)); }
+function selectShelter(id){
+  // Always look up by stable shelter ID (OBJECTID). Callers from the map
+  // pass s.id; callers from list cards also pass s.id. This avoids the
+  // index-vs-id mismatch that caused popups and list cards to disagree
+  // after filtering/sorting.
+  const s = getShelter(id); if(!s) return;
+  if(selectedId && markers[String(selectedId)]){
+    const o = getShelter(selectedId);
+    if(o) markers[String(selectedId)].setIcon(makeIcon(o,false));
+  }
   selectedId = s.id;
-  if(markers[s.id]) markers[s.id].setIcon(makeIcon(s,true));
+  const mk = markers[String(s.id)];
+  if(mk){
+    mk.setIcon(makeIcon(s,true));
+    mk.openPopup();
+  }
   map.flyTo([s.lat,s.lng],14,{duration:0.9});
   document.querySelectorAll('.shelter-card').forEach(c=>c.classList.remove('selected'));
   const card=document.getElementById('card-'+s.id);
@@ -824,12 +835,15 @@ function renderCard(s, i){
     s.pets      ? `<span class="amenity-badge pets">🐾 Allows Pets / Animals</span>` : '',
     s.generator ? `<span class="amenity-badge generator">⚡ Backup Power</span>`      : '',
   ].filter(Boolean).join('');
+  // Use the stable shelter id (OBJECTID) for click handlers — not the list
+  // index, which changes whenever the list is filtered or re-sorted.
+  const sid = String(s.id).replace(/'/g,"\\'");
   return `<article class="shelter-card ${String(selectedId)===String(s.id)?'selected':''}" id="card-${s.id}"
     role="listitem"
     tabindex="0"
     aria-label="${s.name}, ${tc.label}, ${s.city}${s.distance!==null?' — '+s.distance.toFixed(1)+' miles away':''}"
-    onclick="selectShelter(${i})"
-    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter(${i})}">
+    onclick="selectShelter('${sid}')"
+    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter('${sid}')}">
     <div class="card-body">
       <div class="card-strip" style="background:${tc.color}"></div>
       <div class="card-content">
@@ -846,22 +860,22 @@ function renderCard(s, i){
       </div>
     </div>
     <div class="card-footer">
-      <button class="card-action primary" onclick="event.stopPropagation();openDetail(${i})" aria-label="View details for ${s.name}">
+      <button class="card-action primary" onclick="event.stopPropagation();openDetail('${sid}')" aria-label="View details for ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
         Details
       </button>
-      <button class="card-action" onclick="event.stopPropagation();openDetail(${i})" aria-label="Get directions to ${s.name}">
+      <button class="card-action" onclick="event.stopPropagation();openDetail('${sid}')" aria-label="Get directions to ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         Directions
       </button>
     </div>
   </article>`;
 }
-}
 
 let _lastFocusBeforeDetail = null;
-function openDetail(i){
-  const s = renderedList[i]; if(!s) return;
+function openDetail(id){
+  // Look up by shelter ID so filter/sort re-renders don't corrupt the lookup.
+  const s = getShelter(id); if(!s) return;
   _lastFocusBeforeDetail = document.activeElement;
   const tc=TYPES[s.type]||{label:s.type,color:'#666',desc:''};
   const fullAddr=`${s.address}, ${s.city}, ${s.state} ${s.zip}`.trim().replace(/,\s*$/, '');

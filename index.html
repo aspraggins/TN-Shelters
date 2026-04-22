@@ -602,6 +602,11 @@ let markers={}, shelters=[];
 let activeFilter='all', amenityFilter=null, searchTerm='', selectedId=null, sortByDistance=true;
 let refreshTimer=null;
 
+// Safe shelter lookup — always coerce to same type
+function getShelter(id) {
+  return shelters.find(s => String(s.id) === String(id));
+}
+
 function buildFilterGrid() {
   const TYPE_FILTERS = [
     { key:'all',           label:'All Types',            short:'All',       svg:`<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.25)"/><text x="20" y="27" text-anchor="middle" font-family="Arial Black" font-size="18" font-weight="900" fill="white">✦</text></svg>` },
@@ -657,8 +662,8 @@ function refreshMarkers(){
     const tc=TYPES[s.type]||{color:'#666',emoji:'📍',label:s.type};
     const mk=L.marker([s.lat,s.lng],{icon:makeIcon(s)}).addTo(map)
       .bindPopup(`<div class="pop"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0">${ICON_SVG[s.type]||''}</div><div class="pop-name">${s.name}</div></div><div class="pop-type" style="color:${tc.color}">${tc.label}</div></div>`,{closeButton:false,offset:[0,-4]})
-      .on('click',()=>selectShelter(s.id));
-    markers[s.id]=mk;
+      .on('click',()=>selectShelter(String(s.id)));
+    markers[String(s.id)]=mk;
   });
 }
 
@@ -675,9 +680,9 @@ function makeIcon(s, sel=false){
 }
 
 function selectShelter(id){
-  if(selectedId&&markers[selectedId]){const o=shelters.find(s=>s.id===selectedId);if(o)markers[selectedId].setIcon(makeIcon(o,false));}
+  if(selectedId&&markers[selectedId]){const o=getShelter(selectedId);if(o)markers[selectedId].setIcon(makeIcon(o,false));}
   selectedId=id;
-  const s=shelters.find(x=>x.id===id); if(!s)return;
+  const s=getShelter(id); if(!s)return;
   markers[id].setIcon(makeIcon(s,true));
   map.flyTo([s.lat,s.lng],14,{duration:0.9});
   document.querySelectorAll('.shelter-card').forEach(c=>c.classList.remove('selected'));
@@ -818,12 +823,12 @@ function renderCard(s){
     s.pets      ? `<span class="amenity-badge pets">🐾 Allows Pets / Animals</span>` : '',
     s.generator ? `<span class="amenity-badge generator">⚡ Backup Power</span>`      : '',
   ].filter(Boolean).join('');
-  return `<article class="shelter-card ${selectedId===s.id?'selected':''}" id="card-${s.id}"
+  return `<article class="shelter-card ${String(selectedId)===String(s.id)?'selected':''}" id="card-${s.id}"
     role="listitem"
     tabindex="0"
     aria-label="${s.name}, ${tc.label}, ${s.city} — ${dist?s.distance.toFixed(1)+' miles away':''}"
-    onclick="selectShelter(${s.id})"
-    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter(${s.id})}">
+    onclick="selectShelter('${s.id}')"
+    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter('${s.id}')}">
     <div class="card-body">
       <div class="card-strip" style="background:${tc.color}"></div>
       <div class="card-content">
@@ -842,11 +847,11 @@ function renderCard(s){
       </div>
     </div>
     <div class="card-footer">
-      <button class="card-action primary" onclick="event.stopPropagation();openDetail(${s.id})" aria-label="View details for ${s.name}">
+      <button class="card-action primary" onclick="event.stopPropagation();openDetail('${s.id}')" aria-label="View details for ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
         Details
       </button>
-      <button class="card-action" onclick="event.stopPropagation();openDetail(${s.id})" aria-label="Get directions to ${s.name}">
+      <button class="card-action" onclick="event.stopPropagation();openDetail('${s.id}')" aria-label="Get directions to ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         Directions
       </button>
@@ -856,7 +861,7 @@ function renderCard(s){
 
 let _lastFocusBeforeDetail = null;
 function openDetail(id){
-  const s=shelters.find(x=>x.id===id); if(!s)return;
+  const s=getShelter(id); if(!s)return;
   _lastFocusBeforeDetail = document.activeElement;
   const tc=TYPES[s.type]||{label:s.type,color:'#666',desc:''};
   const fullAddr=`${s.address}, ${s.city}, ${s.state} ${s.zip}`.trim().replace(/,\s*$/, '');

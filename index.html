@@ -569,8 +569,8 @@ async function fetchShelters() {
     }));
 
     refreshMarkers();
-    renderList();
     setLoadingState(false);
+    renderList();
     updateLastRefreshed();
 
   } catch (err) {
@@ -581,8 +581,8 @@ async function fetchShelters() {
 }
 
 function setLoadingState(loading) {
-  document.getElementById('list-count').textContent = loading ? 'Loading…' : '';
   document.getElementById('loading-bar').style.display = loading ? 'block' : 'none';
+  if (loading) document.getElementById('list-count').textContent = 'Loading…';
 }
 
 function updateLastRefreshed() {

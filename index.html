@@ -679,14 +679,14 @@ function makeIcon(s, sel=false){
   });
 }
 
-function selectShelter(id){
-  if(selectedId&&markers[selectedId]){const o=getShelter(selectedId);if(o)markers[selectedId].setIcon(makeIcon(o,false));}
-  selectedId=id;
-  const s=getShelter(id); if(!s)return;
-  markers[id].setIcon(makeIcon(s,true));
+function selectShelter(i){
+  const s = renderedList[i]; if(!s) return;
+  if(selectedId && markers[selectedId]){ const o=getShelter(selectedId); if(o) markers[selectedId].setIcon(makeIcon(o,false)); }
+  selectedId = s.id;
+  if(markers[s.id]) markers[s.id].setIcon(makeIcon(s,true));
   map.flyTo([s.lat,s.lng],14,{duration:0.9});
   document.querySelectorAll('.shelter-card').forEach(c=>c.classList.remove('selected'));
-  const card=document.getElementById('card-'+id);
+  const card=document.getElementById('card-'+s.id);
   if(card){card.classList.add('selected');card.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 
@@ -805,17 +805,18 @@ function getFiltered(){
   return list;
 }
 
+let renderedList = [];
+
 function renderList(){
-  const list=getFiltered();
-  document.getElementById('list-count').textContent=`${list.length} open shelter${list.length!==1?'s':''}`;
+  renderedList = getFiltered();
+  document.getElementById('list-count').textContent=`${renderedList.length} open shelter${renderedList.length!==1?'s':''}`;
   const c=document.getElementById('shelter-list');
-  if(!list.length){c.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p>No open shelters match your search.<br>Try a different filter or search term.</p></div>';return;}
-  c.innerHTML=list.map(renderCard).join('');
+  if(!renderedList.length){c.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p>No open shelters match your search.<br>Try a different filter or search term.</p></div>';return;}
+  c.innerHTML=renderedList.map((s,i)=>renderCard(s,i)).join('');
 }
 
-function renderCard(s){
-  const tc=TYPES[s.type]||{label:s.type,emoji:'📍',color:'#666'};
-  const is24=s.hours==='24 Hours';
+function renderCard(s, i){
+  const tc=TYPES[s.type]||{label:s.type,color:'#666'};
   const dist=s.distance!==null?`<span class="dist-pill">📍 ${s.distance.toFixed(1)} mi</span>`:'';
   const cityLine=[s.address,[s.city,s.state].filter(Boolean).join(', ')+(s.zip?` ${s.zip}`:''),s.county?`(${s.county} Co.)`:''].filter(Boolean).join(' · ');
   const amenities=[
@@ -826,9 +827,9 @@ function renderCard(s){
   return `<article class="shelter-card ${String(selectedId)===String(s.id)?'selected':''}" id="card-${s.id}"
     role="listitem"
     tabindex="0"
-    aria-label="${s.name}, ${tc.label}, ${s.city} — ${dist?s.distance.toFixed(1)+' miles away':''}"
-    onclick="selectShelter('${s.id}')"
-    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter('${s.id}')}">
+    aria-label="${s.name}, ${tc.label}, ${s.city}${s.distance!==null?' — '+s.distance.toFixed(1)+' miles away':''}"
+    onclick="selectShelter(${i})"
+    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter(${i})}">
     <div class="card-body">
       <div class="card-strip" style="background:${tc.color}"></div>
       <div class="card-content">
@@ -840,28 +841,27 @@ function renderCard(s){
           </div>
         </div>
         <div class="card-address">${cityLine}</div>
-        <div class="card-meta">
-          ${dist}
-        </div>
+        <div class="card-meta">${dist}</div>
         ${amenities?`<div class="amenity-badges">${amenities}</div>`:''}
       </div>
     </div>
     <div class="card-footer">
-      <button class="card-action primary" onclick="event.stopPropagation();openDetail('${s.id}')" aria-label="View details for ${s.name}">
+      <button class="card-action primary" onclick="event.stopPropagation();openDetail(${i})" aria-label="View details for ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
         Details
       </button>
-      <button class="card-action" onclick="event.stopPropagation();openDetail('${s.id}')" aria-label="Get directions to ${s.name}">
+      <button class="card-action" onclick="event.stopPropagation();openDetail(${i})" aria-label="Get directions to ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         Directions
       </button>
     </div>
   </article>`;
 }
+}
 
 let _lastFocusBeforeDetail = null;
-function openDetail(id){
-  const s=getShelter(id); if(!s)return;
+function openDetail(i){
+  const s = renderedList[i]; if(!s) return;
   _lastFocusBeforeDetail = document.activeElement;
   const tc=TYPES[s.type]||{label:s.type,color:'#666',desc:''};
   const fullAddr=`${s.address}, ${s.city}, ${s.state} ${s.zip}`.trim().replace(/,\s*$/, '');

@@ -44,17 +44,44 @@
   }
   #search-input:focus { border-color: var(--tema-blue); box-shadow: 0 0 0 3px rgba(0,40,104,0.12); }
   #search-input::placeholder { color: var(--text3); }
-  .filter-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 0 4px 0; -webkit-overflow-scrolling: touch; }
-  .filter-row::-webkit-scrollbar { display: none; }
-  .filter-divider { width: 1px; background: rgba(255,255,255,0.25); flex-shrink: 0; margin: 4px 2px; }
-  .chip-icon { display: inline-flex; width: 16px; height: 16px; border-radius: 50%; overflow: hidden; vertical-align: middle; margin-right: 2px; flex-shrink: 0; }
-  .chip {
-    flex-shrink: 0; padding: 5px 11px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.3);
-    font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85);
-    cursor: pointer; transition: all 0.15s; user-select: none;
+  /* Filter grid */
+  .filter-grid { padding-bottom: 6px; }
+  .fg-type-row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
   }
-  .chip.active { background: white; border-color: white; color: var(--tema-blue); }
-  .chip:hover:not(.active) { background: rgba(255,255,255,0.22); color: white; }
+  .fgt {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; user-select: none; opacity: 0.55; transition: opacity 0.15s, transform 0.15s;
+  }
+  .fgt:hover { opacity: 0.8; }
+  .fgt.active { opacity: 1; transform: scale(1.08); }
+  .fgt-icon {
+    width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    border: 2px solid transparent; transition: border-color 0.15s;
+  }
+  .fgt.active .fgt-icon { border-color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  .fgt-all .fgt-icon, .fgt-icon.fgt-all { background: rgba(255,255,255,0.2); }
+  .fgt-label {
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.85);
+    text-align: center; line-height: 1.1; letter-spacing: 0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  .fgt.active .fgt-label { color: white; }
+
+  /* Amenity toggles */
+  .fg-amenity-row { display: flex; gap: 6px; }
+  .amenity-toggle {
+    flex: 1; text-align: center; padding: 5px 4px;
+    border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.25);
+    font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .amenity-toggle.active { background: white; border-color: white; color: var(--tema-blue); }
+  .amenity-toggle:hover:not(.active) { background: rgba(255,255,255,0.2); color: white; }
 
   /* Map */
   #map-container { flex-shrink: 0; height: 36vh; position: relative; }
@@ -189,19 +216,48 @@
       </div>
       <div id="last-refreshed" style="font-size:10px;color:rgba(255,255,255,0.5);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:auto"></div>
     </div>
-    <div class="filter-row">
-      <div class="chip active" onclick="setFilter(this,'all')">All</div>
-      <div class="chip" onclick="setFilter(this,'storm')"><span class="chip-icon" style="background:#c0392b">${ICON_SVG.storm||''}</span> Storm</div>
-      <div class="chip" onclick="setFilter(this,'overnight')"><span class="chip-icon" style="background:#1a5276">${ICON_SVG.overnight||''}</span> Overnight</div>
-      <div class="chip" onclick="setFilter(this,'warming')"><span class="chip-icon" style="background:#d4ac0d">${ICON_SVG.warming||''}</span> Warming</div>
-      <div class="chip" onclick="setFilter(this,'cooling')"><span class="chip-icon" style="background:#1a78c2">${ICON_SVG.cooling||''}</span> Cooling</div>
-      <div class="chip" onclick="setFilter(this,'evacuation')"><span class="chip-icon" style="background:#6c3483">${ICON_SVG.evacuation||''}</span> Evacuation</div>
-      <div class="chip" onclick="setFilter(this,'reunification')"><span class="chip-icon" style="background:#7d3c98">${ICON_SVG.reunification||''}</span> Reunification</div>
-      <div class="chip" onclick="setFilter(this,'respite')"><span class="chip-icon" style="background:#b7950b">${ICON_SVG.respite||''}</span> Respite</div>
-      <div class="filter-divider"></div>
-      <div class="chip" data-amenity="ada"       onclick="setAmenity(this,'ada')">♿ ADA</div>
-      <div class="chip" data-amenity="pets"      onclick="setAmenity(this,'pets')">🐾 Pets</div>
-      <div class="chip" data-amenity="generator" onclick="setAmenity(this,'generator')">⚡ Generator</div>
+    <div class="filter-grid">
+      <div class="fg-type-row">
+        <div class="fgt active" onclick="setFilter(this,'all')">
+          <div class="fgt-icon fgt-all">
+            <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.25)"/><text x="20" y="27" text-anchor="middle" font-family="Arial Black" font-size="18" font-weight="900" fill="white">✦</text></svg>
+          </div>
+          <div class="fgt-label">All</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'storm')">
+          <div class="fgt-icon">${ICON_SVG.storm}</div>
+          <div class="fgt-label">Storm</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'overnight')">
+          <div class="fgt-icon">${ICON_SVG.overnight}</div>
+          <div class="fgt-label">Overnight</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'warming')">
+          <div class="fgt-icon">${ICON_SVG.warming}</div>
+          <div class="fgt-label">Warming</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'cooling')">
+          <div class="fgt-icon">${ICON_SVG.cooling}</div>
+          <div class="fgt-label">Cooling</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'evacuation')">
+          <div class="fgt-icon">${ICON_SVG.evacuation}</div>
+          <div class="fgt-label">Evacuation</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'reunification')">
+          <div class="fgt-icon">${ICON_SVG.reunification}</div>
+          <div class="fgt-label">Reunify</div>
+        </div>
+        <div class="fgt" onclick="setFilter(this,'respite')">
+          <div class="fgt-icon">${ICON_SVG.respite}</div>
+          <div class="fgt-label">Respite</div>
+        </div>
+      </div>
+      <div class="fg-amenity-row">
+        <div class="amenity-toggle" data-amenity="ada" onclick="setAmenity(this,'ada')">♿ ADA</div>
+        <div class="amenity-toggle" data-amenity="pets" onclick="setAmenity(this,'pets')">🐾 Pets OK</div>
+        <div class="amenity-toggle" data-amenity="generator" onclick="setAmenity(this,'generator')">⚡ Generator</div>
+      </div>
     </div>
   </div>
 
@@ -583,15 +639,15 @@ function haversine(la1,lo1,la2,lo2){
 function r(d){return d*Math.PI/180;}
 
 function setFilter(el,f){
-  document.querySelectorAll('.chip:not([data-amenity])').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.fgt').forEach(c=>c.classList.remove('active'));
   el.classList.add('active'); activeFilter=f; renderList();
 }
 function setAmenity(el,a){
-  if(amenityFilter===a){ // toggle off
+  if(amenityFilter===a){
     el.classList.remove('active');
     amenityFilter=null;
   } else {
-    document.querySelectorAll('.chip[data-amenity]').forEach(c=>c.classList.remove('active'));
+    document.querySelectorAll('.amenity-toggle').forEach(c=>c.classList.remove('active'));
     el.classList.add('active');
     amenityFilter=a;
   }

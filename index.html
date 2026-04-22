@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="frame-ancestors *">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<title>TEMA Shelter Finder | TN-Shelters</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0f2f5; --surface: #ffffff; --surface2: #f7f8fa; --border: #e2e5ea;
+    --text: #0f1117; --text2: #5a6070; --text3: #9aa0ae;
+    --open: #00a86b; --open-bg: #e6f7f1;
+    --tema-blue: #002868; --tema-red: #BF0A30;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08); --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+    --radius: 14px; --radius-sm: 8px;
+  }
+  html, body { height: 100%; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  #app { display: flex; flex-direction: column; height: 100%; min-height: 100vh; max-width: 480px; margin: 0 auto; background: var(--bg); }
+
+  /* Header */
+  #header { background: var(--tema-blue); padding: 12px 16px 10px; flex-shrink: 0; z-index: 100; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .app-title { display: flex; align-items: center; gap: 8px; }
+  .tn-badge { background: var(--tema-red); color: white; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 5px; letter-spacing: 0.5px; }
+  .app-title-text { color: white; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+  .location-pill {
+    display: flex; align-items: center; gap: 5px; font-size: 12px; font-family: 'DM Mono', monospace;
+    color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px; padding: 4px 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .location-pill:hover { background: rgba(255,255,255,0.25); color: white; }
+  .search-wrap { position: relative; margin-bottom: 8px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); }
+  #search-input {
+    width: 100%; padding: 9px 9px 9px 34px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--surface); color: var(--text); outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #search-input:focus { border-color: var(--tema-blue); box-shadow: 0 0 0 3px rgba(0,40,104,0.12); }
+  #search-input::placeholder { color: var(--text3); }
+  .filter-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 5px 11px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.3);
+    font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85);
+    cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .chip.active { background: white; border-color: white; color: var(--tema-blue); }
+  .chip:hover:not(.active) { background: rgba(255,255,255,0.22); color: white; }
+
+  /* Map */
+  #map-container { flex-shrink: 0; height: 36vh; position: relative; }
+  #map { width: 100%; height: 100%; }
+  .map-handle { position: absolute; bottom: 0; left: 0; right: 0; height: 18px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; z-index: 500; background: linear-gradient(transparent, rgba(0,0,0,0.05)); }
+  .handle-bar { width: 36px; height: 4px; background: rgba(255,255,255,0.8); border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  #fab-locate {
+    position: absolute; bottom: 14px; right: 12px; width: 44px; height: 44px;
+    background: var(--tema-blue); color: white; border: none; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0,40,104,0.4);
+    transition: all 0.2s; z-index: 400;
+  }
+  #fab-locate:hover { transform: scale(1.08); } #fab-locate:active { transform: scale(0.95); }
+
+  /* List */
+  #list-section { flex: 1; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .list-header { position: sticky; top: 0; background: var(--bg); padding: 10px 16px 6px; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  .list-count { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; }
+  .sort-toggle { font-size: 12px; color: var(--tema-blue); font-weight: 600; cursor: pointer; }
+  #shelter-list { display: flex; flex-direction: column; padding: 0 0 80px; }
+
+  /* Card */
+  .shelter-card {
+    background: var(--surface); margin: 0 12px 8px; border-radius: var(--radius);
+    box-shadow: var(--shadow); border: 1.5px solid transparent; cursor: pointer; transition: all 0.2s; overflow: hidden;
+  }
+  .shelter-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+  .shelter-card.selected { border-color: var(--tema-blue); box-shadow: 0 0 0 3px rgba(0,40,104,0.1), var(--shadow); }
+  .card-body { display: flex; align-items: stretch; }
+  .card-strip { width: 5px; flex-shrink: 0; }
+  .card-content { flex: 1; padding: 13px 13px 10px; min-width: 0; }
+  .card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
+  .type-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .card-titles { flex: 1; min-width: 0; }
+  .card-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
+  .card-type-label { font-size: 11px; font-weight: 600; margin-top: 1px; }
+  .card-address { font-size: 12px; color: var(--text2); line-height: 1.4; margin-bottom: 7px; }
+  .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .hours-badge {
+    display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;
+    color: var(--text2); background: var(--surface2); border: 1px solid var(--border);
+    padding: 3px 8px; border-radius: 6px;
+  }
+  .hours-badge.h24 { color: var(--open); background: var(--open-bg); border-color: transparent; }
+  .dist-pill { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 500; color: var(--tema-blue); background: #e6eaf5; padding: 3px 8px; border-radius: 6px; }
+  .card-footer { border-top: 1px solid var(--border); display: flex; }
+  .card-action {
+    flex: 1; padding: 9px 6px; display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.15s;
+    text-decoration: none; border: none; background: none; font-family: 'DM Sans', sans-serif;
+  }
+  .card-action:hover { background: var(--surface2); color: var(--tema-blue); }
+  .card-action + .card-action { border-left: 1px solid var(--border); }
+  .card-action.primary { color: var(--tema-blue); }
+
+  /* Empty */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.5; }
+
+  /* User marker */
+  .user-dot { width: 16px; height: 16px; background: var(--tema-blue); border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 3px rgba(0,40,104,0.3); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 3px rgba(0,40,104,0.3)} 50%{box-shadow:0 0 0 8px rgba(0,40,104,0.08)} }
+
+  /* Popup */
+  .leaflet-popup-content-wrapper { border-radius: var(--radius-sm) !important; box-shadow: var(--shadow-lg) !important; font-family: 'DM Sans',sans-serif !important; padding: 0 !important; }
+  .leaflet-popup-content { margin: 0 !important; }
+  .pop { padding: 11px 13px; min-width: 160px; }
+  .pop-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  .pop-type { font-size: 11px; font-weight: 600; }
+  .pop-hrs { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  /* Detail Sheet */
+  #detail-sheet { position: fixed; inset: 0; z-index: 2000; pointer-events: none; }
+  #detail-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); opacity: 0; transition: opacity 0.3s; }
+  #detail-content {
+    position: absolute; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto;
+    background: var(--surface); border-radius: 20px 20px 0 0;
+    padding: 0 0 env(safe-area-inset-bottom,20px);
+    transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    max-height: 80vh; overflow-y: auto;
+  }
+  #detail-sheet.open { pointer-events: all; }
+  #detail-sheet.open #detail-overlay { opacity: 1; }
+  #detail-sheet.open #detail-content { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+  .sheet-banner { margin: 14px 20px 0; border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .banner-icon { font-size: 22px; }
+  .banner-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .banner-desc { font-size: 12px; margin-top: 2px; opacity: 0.82; line-height: 1.4; }
+  .sheet-header { padding: 14px 20px 10px; }
+  .sheet-name { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 3px; }
+  .sheet-addr { font-size: 13px; color: var(--text2); line-height: 1.4; }
+  .sheet-dist { font-size: 12px; font-family: 'DM Mono',monospace; font-weight: 600; margin-top: 5px; }
+  .hours-box { margin: 0 20px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+  .hours-box-icon { font-size: 18px; }
+  .hours-main { font-size: 14px; font-weight: 700; }
+  .hours-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .sdiv { height: 1px; background: var(--border); margin: 0 20px; }
+  .services-sec { padding: 14px 20px; }
+  .sec-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); margin-bottom: 8px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text2); }
+  .contact-sec { padding: 12px 20px 14px; }
+  .contact-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; }
+  .contact-ico { background: var(--surface2); border-radius: 8px; padding: 7px; display: flex; color: var(--text2); }
+  .nav-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 20px; }
+  .nav-btn { padding: 13px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; font-family: 'DM Sans',sans-serif; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; transition: opacity 0.15s; }
+  .nav-btn:hover { opacity: 0.88; }
+  .nav-btn.goo { background: #4285F4; color: white; }
+  .nav-btn.apl { background: #111; color: white; }
+
+  @keyframes loadbar { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+  @media(min-width:600px){ #app{ box-shadow: var(--shadow-lg); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div class="header-top">
+      <div class="app-title">
+        <div class="tn-badge">TN</div>
+        <div class="app-title-text">TEMA Shelter Finder</div>
+      </div>
+      <div class="location-pill" onclick="requestLocation()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        <span id="loc-label">Locate me</span>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="search-input" type="text" placeholder="Search by name, city, county…" oninput="onSearch()">
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div id="loading-bar" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;flex:1;margin-right:10px;overflow:hidden">
+        <div style="height:100%;width:40%;background:white;border-radius:2px;animation:loadbar 1.2s ease-in-out infinite"></div>
+      </div>
+      <div id="last-refreshed" style="font-size:10px;color:rgba(255,255,255,0.5);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:auto"></div>
+    </div>
+    <div class="filter-row">
+      <div class="chip active" onclick="setFilter(this,'all')">All Types</div>
+      <div class="chip" onclick="setFilter(this,'storm')">🏠 Storm</div>
+      <div class="chip" onclick="setFilter(this,'overnight')">🛏 Overnight</div>
+      <div class="chip" onclick="setFilter(this,'warming')">🔥 Warming</div>
+      <div class="chip" onclick="setFilter(this,'cooling')">❄️ Cooling</div>
+      <div class="chip" onclick="setFilter(this,'evacuation')">🚨 Evacuation</div>
+      <div class="chip" onclick="setFilter(this,'reunification')">👨‍👩‍👧 Reunification</div>
+      <div class="chip" onclick="setFilter(this,'respite')">🏡 Respite</div>
+    </div>
+  </div>
+
+  <div id="map-container">
+    <div id="map"></div>
+    <div class="map-handle"><div class="handle-bar"></div></div>
+    <button id="fab-locate" onclick="requestLocation()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    </button>
+  </div>
+
+  <div id="list-section">
+    <div class="list-header">
+      <div class="list-count" id="list-count">Loading…</div>
+      <div class="sort-toggle" id="sort-label" onclick="toggleSort()">📍 Nearest first</div>
+    </div>
+    <div id="shelter-list"></div>
+  </div>
+</div>
+
+<div id="detail-sheet">
+  <div id="detail-overlay" onclick="closeDetail()"></div>
+  <div id="detail-content">
+    <div class="sheet-handle"></div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<script>
+// ── Shelter type definitions (matches TEMA one-pager) ──
+const TYPES = {
+  storm:         { label:'Storm Shelter',        emoji:'🏠', color:'#c0392b', desc:'Immediate protection during severe weather events.' },
+  overnight:     { label:'Overnight Shelter',    emoji:'🛏',  color:'#2980b9', desc:'Temporary lodging for individuals displaced by disasters or emergencies.' },
+  warming:       { label:'Warming Center',       emoji:'🔥', color:'#e67e22', desc:'Relief during extreme cold to prevent weather-related health risks.' },
+  cooling:       { label:'Cooling Center',       emoji:'❄️', color:'#16a085', desc:'Relief during extreme heat to prevent weather-related health risks.' },
+  evacuation:    { label:'Evacuation Center',    emoji:'🚨', color:'#d35400', desc:'Initial gathering points for those forced to leave their homes, offering basic services and information.' },
+  reunification: { label:'Reunification Center', emoji:'👨‍👩‍👧', color:'#8e44ad', desc:'Supports families in reconnecting after emergencies.' },
+  respite:       { label:'Respite Center',       emoji:'🏡', color:'#27ae60', desc:'Short-term relief, rest, and support for those affected by disasters or prolonged emergencies.' },
+};
+
+// ════════════════════════════════════════════════════════════════
+//  ARCGIS CONFIGURATION
+//  Only this block needs editing before deployment.
+// ════════════════════════════════════════════════════════════════
+const AGOL = {
+  serviceUrl: 'https://services1.arcgis.com/kILp9lqGUeOhnDbI/ArcGIS/rest/services/Shelter_Status_Public_View/FeatureServer/0',
+
+  // Public service — no token needed.
+  token: '',
+
+  // Fetch all records (the service already filters to open/public shelters by view definition).
+  // If a status field exists to further filter, add it here.
+  whereClause: "1=1",
+
+  // Auto-refresh interval in milliseconds. 0 = disabled.
+  refreshInterval: 5 * 60 * 1000, // 5 minutes
+};
+
+// ════════════════════════════════════════════════════════════════
+//  FIELD MAPPING  (exact field names from your feature service)
+// ════════════════════════════════════════════════════════════════
+//
+//  ArcGIS field name  →  what it means
+//  ─────────────────────────────────────────────────────────────
+//  shelterType        →  Type of Shelter   (storm / overnight / warming / cooling / evacuation / reunification / respite)
+//  street             →  Address
+//  city               →  City
+//  state              →  State
+//  zip                →  Zip Code
+//  county             →  County
+//  NameShelter        →  Shelter Name
+//  details            →  Additional Notes
+//  finalCloseTime     →  Close Time (Date field — epoch ms)
+//  OpenTimeFinal      →  Open Time  (Date field — epoch ms)
+//  handicap           →  Handicap Accessible  (Yes/No string)
+//  backpower          →  Generator            (Yes/No string)
+//  allowpets          →  Allows Pets/Animals  (Yes/No string)
+//  x                  →  Longitude (WGS84)
+//  y                  →  Latitude  (WGS84)
+//  OBJECTID           →  Unique feature ID
+
+// Maps the exact shelterType coded values (stored values) to internal TYPES keys.
+function normaliseType(raw) {
+  if (!raw) return 'overnight';
+  const map = {
+    'Storm Shelter':        'storm',
+    'Overnight':            'overnight',
+    'Warming':              'warming',
+    'Cooling':              'cooling',
+    'Respite Center':       'respite',
+    'Evacuation Center':    'evacuation',
+    'Reunification Center': 'reunification',
+  };
+  // Exact match first, then case-insensitive fallback
+  return map[raw] || map[Object.keys(map).find(k => k.toLowerCase() === raw.toString().toLowerCase())] || 'overnight';
+}
+
+// Format an ArcGIS Date field (epoch milliseconds) into a readable time string.
+// Returns null if the value is missing/null.
+function fmtTime(epochMs) {
+  if (epochMs == null) return null;
+  return new Date(epochMs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+// Build a human-readable hours string from the two Date fields.
+function buildHours(openMs, closeMs) {
+  const o = fmtTime(openMs);
+  const c = fmtTime(closeMs);
+  if (!o && !c) return '24 Hours';           // no times set → assume 24 hrs
+  if (o && c)  return `${o} – ${c}`;
+  if (c)       return `Closes ${c}`;
+  return 'Hours vary';
+}
+
+// Build the services array from the three Yes/No boolean-ish fields
+// plus the free-text details note.
+function buildServices(p) {
+  const tags = [];
+  const yes = v => v && v.toString().toLowerCase().startsWith('y');
+  if (yes(p.handicap))   tags.push('♿ ADA Accessible');
+  if (yes(p.backpower))  tags.push('⚡ Generator');
+  if (yes(p.allowpets))  tags.push('🐾 Pets / Animals Allowed');
+  return tags;
+}
+
+// Convert a raw ArcGIS feature into the internal shelter object.
+function featureToShelter(feature) {
+  const p   = feature.attributes;
+  // x/y are stored as Double fields in WGS84 — use them directly.
+  // Fall back to geometry object if the explicit fields are missing.
+  const lat = p.y  ?? (feature.geometry ? feature.geometry.y : null);
+  const lng = p.x  ?? (feature.geometry ? feature.geometry.x : null);
+
+  const openMs  = p.OpenTimeFinal;
+  const closeMs = p.finalCloseTime;
+
+  return {
+    id:        p.OBJECTID,
+    name:      p.NameShelter   || 'Unknown Shelter',
+    type:      normaliseType(p.shelterType),
+    address:   p.street        || '',
+    city:      p.city          || '',
+    state:     p.state         || 'TN',
+    zip:       p.zip           || '',
+    county:    p.county        || '',
+    hours:     buildHours(openMs, closeMs),
+    hoursNote: p.details       || '',
+    phone:     '',             // No phone field in this schema — remove Call button or add field later
+    services:  buildServices(p),
+    lat,
+    lng,
+    distance:  null,
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DATA FETCHING
+// ════════════════════════════════════════════════════════════════
+async function fetchShelters() {
+  setLoadingState(true);
+
+  // Exact field names from the feature service schema
+  const outFields = [
+    'OBJECTID','shelterType','street','city','state','zip','county',
+    'NameShelter','details','finalCloseTime','OpenTimeFinal',
+    'handicap','backpower','allowpets','x','y'
+  ].join(',');
+
+  const params = new URLSearchParams({
+    where:          AGOL.whereClause,
+    outFields,
+    returnGeometry: true,   // geometry as fallback if x/y fields are null
+    outSR:          4326,
+    f:              'json',
+    ...(AGOL.token ? { token: AGOL.token } : {}),
+  });
+
+  const url = `${AGOL.serviceUrl}/query?${params}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data.error) throw new Error(`ArcGIS error ${data.error.code}: ${data.error.message}`);
+
+    const raw = (data.features || [])
+      .map(featureToShelter)
+      .filter(s => s.lat !== null && s.lng !== null); // drop records with no geometry
+
+    // Preserve distance values if we already have a user location
+    shelters = raw.map(s => ({
+      ...s,
+      distance: (userLat !== null)
+        ? haversine(userLat, userLng, s.lat, s.lng)
+        : null,
+    }));
+
+    refreshMarkers();
+    renderList();
+    setLoadingState(false);
+    updateLastRefreshed();
+
+  } catch (err) {
+    console.error('Failed to load shelters:', err);
+    setLoadingState(false);
+    showError(`Could not load shelter data.<br><small>${err.message}</small>`);
+  }
+}
+
+function setLoadingState(loading) {
+  document.getElementById('list-count').textContent = loading ? 'Loading…' : '';
+  document.getElementById('loading-bar').style.display = loading ? 'block' : 'none';
+}
+
+function updateLastRefreshed() {
+  const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('last-refreshed').textContent = `Updated ${t}`;
+}
+
+function showError(msg) {
+  document.getElementById('shelter-list').innerHTML =
+    `<div class="empty-state"><div class="icon">⚠️</div><p>${msg}</p>
+     <button onclick="fetchShelters()" style="margin-top:14px;padding:10px 20px;background:var(--tema-blue);color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Retry</button></div>`;
+}
+
+// ── State ──
+let map, userMarker, userLat=null, userLng=null;
+let markers={}, shelters=[];
+let activeFilter='all', searchTerm='', selectedId=null, sortByDistance=true;
+let refreshTimer=null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  initMap();
+  await fetchShelters();
+  if(navigator.geolocation) navigator.geolocation.getCurrentPosition(onLocationSuccess,()=>{},{timeout:5000});
+  if(AGOL.refreshInterval > 0) refreshTimer = setInterval(fetchShelters, AGOL.refreshInterval);
+});
+
+function initMap(){
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([35.85,-86.4],7);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
+  L.control.attribution({position:'bottomleft',prefix:'© OpenStreetMap © CARTO'}).addTo(map);
+}
+
+// Remove all existing markers and re-add from current shelters array.
+function refreshMarkers(){
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers={};
+  shelters.forEach(s=>{
+    const tc=TYPES[s.type]||{color:'#666',emoji:'📍',label:s.type};
+    const mk=L.marker([s.lat,s.lng],{icon:makeIcon(s)}).addTo(map)
+      .bindPopup(`<div class="pop"><div class="pop-name">${s.name}</div><div class="pop-type" style="color:${tc.color}">${tc.emoji} ${tc.label}</div><div class="pop-hrs">🕐 ${s.hours}</div></div>`,{closeButton:false,offset:[0,-8]})
+      .on('click',()=>selectShelter(s.id));
+    markers[s.id]=mk;
+  });
+}
+
+function makeIcon(s,sel=false){
+  const tc=TYPES[s.type]||{color:'#666',emoji:'📍'};
+  const sz=sel?40:32;
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:${sz}px;height:${sz}px;background:${tc.color};border-radius:50% 50% 50% 4px;transform:rotate(-45deg);border:2.5px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;font-size:${sel?15:12}px"><span style="transform:rotate(45deg)">${tc.emoji}</span></div>`,
+    iconSize:[sz,sz],iconAnchor:[sz/2,sz]
+  });
+}
+
+function selectShelter(id){
+  if(selectedId&&markers[selectedId]){const o=shelters.find(s=>s.id===selectedId);if(o)markers[selectedId].setIcon(makeIcon(o,false));}
+  selectedId=id;
+  const s=shelters.find(x=>x.id===id); if(!s)return;
+  markers[id].setIcon(makeIcon(s,true));
+  map.flyTo([s.lat,s.lng],14,{duration:0.9});
+  document.querySelectorAll('.shelter-card').forEach(c=>c.classList.remove('selected'));
+  const card=document.getElementById('card-'+id);
+  if(card){card.classList.add('selected');card.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+
+function requestLocation(){
+  if(!navigator.geolocation)return;
+  document.getElementById('loc-label').textContent='…';
+  navigator.geolocation.getCurrentPosition(onLocationSuccess,()=>{
+    document.getElementById('loc-label').textContent='Locate me';
+    alert('Could not get your location. Please enable location access.');
+  },{timeout:10000});
+}
+
+function onLocationSuccess(pos){
+  userLat=pos.coords.latitude; userLng=pos.coords.longitude;
+  document.getElementById('loc-label').textContent='Located ✓';
+  if(userMarker)map.removeLayer(userMarker);
+  userMarker=L.marker([userLat,userLng],{icon:L.divIcon({className:'',html:'<div class="user-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]}),zIndexOffset:1000}).addTo(map);
+  map.flyTo([userLat,userLng],10,{duration:1});
+  shelters=shelters.map(s=>({...s,distance:haversine(userLat,userLng,s.lat,s.lng)}));
+  renderList();
+}
+
+function haversine(la1,lo1,la2,lo2){
+  const R=3958.8,dL=r(la2-la1),dO=r(lo2-lo1);
+  return R*2*Math.atan2(Math.sqrt(Math.sin(dL/2)**2+Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(dO/2)**2),Math.sqrt(1-(Math.sin(dL/2)**2+Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(dO/2)**2)));
+}
+function r(d){return d*Math.PI/180;}
+
+function setFilter(el,f){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); activeFilter=f; renderList();
+}
+function onSearch(){searchTerm=document.getElementById('search-input').value.toLowerCase();renderList();}
+function toggleSort(){
+  sortByDistance=!sortByDistance;
+  document.getElementById('sort-label').textContent=sortByDistance?'📍 Nearest first':'🔤 A–Z';
+  renderList();
+}
+
+function getFiltered(){
+  let list=shelters.filter(s=>{
+    if(activeFilter!=='all'&&s.type!==activeFilter)return false;
+    if(searchTerm){const h=`${s.name} ${s.city} ${s.county} ${s.address}`.toLowerCase();if(!h.includes(searchTerm))return false;}
+    return true;
+  });
+  if(sortByDistance&&userLat!==null) list.sort((a,b)=>(a.distance??Infinity)-(b.distance??Infinity));
+  else list.sort((a,b)=>a.name.localeCompare(b.name));
+  return list;
+}
+
+function renderList(){
+  const list=getFiltered();
+  document.getElementById('list-count').textContent=`${list.length} open shelter${list.length!==1?'s':''}`;
+  const c=document.getElementById('shelter-list');
+  if(!list.length){c.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p>No open shelters match your search.<br>Try a different filter or search term.</p></div>';return;}
+  c.innerHTML=list.map(renderCard).join('');
+}
+
+function renderCard(s){
+  const tc=TYPES[s.type]||{label:s.type,emoji:'📍',color:'#666'};
+  const is24=s.hours==='24 Hours';
+  const dist=s.distance!==null?`<span class="dist-pill">📍 ${s.distance.toFixed(1)} mi</span>`:'';
+  const cityLine=[s.address, [s.city,s.state].filter(Boolean).join(', ')+(s.zip?` ${s.zip}`:''), s.county?`(${s.county} Co.)`:'' ].filter(Boolean).join(' · ');
+  return `<div class="shelter-card ${selectedId===s.id?'selected':''}" id="card-${s.id}" onclick="selectShelter(${s.id})">
+    <div class="card-body">
+      <div class="card-strip" style="background:${tc.color}"></div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="type-icon" style="background:${tc.color}18">${tc.emoji}</div>
+          <div class="card-titles">
+            <div class="card-name">${s.name}</div>
+            <div class="card-type-label" style="color:${tc.color}">${tc.label}</div>
+          </div>
+        </div>
+        <div class="card-address">${cityLine}</div>
+        <div class="card-meta">
+          <span class="hours-badge ${is24?'h24':''}">${is24?'✅ Open 24 hrs':'🕐 '+s.hours}</span>
+          ${dist}
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <button class="card-action primary" onclick="event.stopPropagation();openDetail(${s.id})">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        Details
+      </button>
+      <button class="card-action" onclick="event.stopPropagation();openDetail(${s.id})">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Directions
+      </button>
+    </div>
+  </div>`;
+}
+
+function openDetail(id){
+  const s=shelters.find(x=>x.id===id); if(!s)return;
+  const tc=TYPES[s.type]||{label:s.type,emoji:'📍',color:'#666',desc:''};
+  const fullAddr=`${s.address}, ${s.city}, ${s.state} ${s.zip}`.trim().replace(/,\s*$/, '');
+  const addr=encodeURIComponent(fullAddr);
+  const is24=s.hours==='24 Hours';
+  const distLine=s.distance!==null?`<div class="sheet-dist" style="color:${tc.color}">📍 ${s.distance.toFixed(1)} mi away</div>`:'';
+  const notesSec=s.hoursNote?`
+    <div class="sdiv"></div>
+    <div class="services-sec">
+      <div class="sec-label">Additional Notes</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.5">${s.hoursNote}</p>
+    </div>`:'';
+  const servicesSec=s.services.length?`
+    <div class="sdiv"></div>
+    <div class="services-sec">
+      <div class="sec-label">Amenities</div>
+      <div class="tags">${s.services.map(sv=>`<span class="tag">${sv}</span>`).join('')}</div>
+    </div>`:'';
+
+  document.getElementById('detail-body').innerHTML=`
+    <div class="sheet-banner" style="background:${tc.color}18;border:1px solid ${tc.color}30;margin-top:14px">
+      <div class="banner-icon">${tc.emoji}</div>
+      <div><div class="banner-label" style="color:${tc.color}">${tc.label}</div><div class="banner-desc" style="color:${tc.color}">${tc.desc}</div></div>
+    </div>
+    <div class="sheet-header">
+      <div class="sheet-name">${s.name}</div>
+      <div class="sheet-addr">${s.address}<br>${s.city}, ${s.state} ${s.zip}${s.county?' — '+s.county+' County':''}</div>
+      ${distLine}
+    </div>
+    <div class="hours-box">
+      <div class="hours-box-icon">${is24?'✅':'🕐'}</div>
+      <div><div class="hours-main">${s.hours}</div>${is24?'<div class="hours-sub">Open around the clock</div>':''}</div>
+    </div>
+    ${notesSec}
+    ${servicesSec}
+    <div class="sdiv"></div>
+    <div class="nav-btns">
+      <a class="nav-btn goo" href="https://maps.google.com/?q=${addr}" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Google Maps
+      </a>
+      <a class="nav-btn apl" href="https://maps.apple.com/?q=${addr}" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Apple Maps
+      </a>
+    </div>`;
+  document.getElementById('detail-sheet').classList.add('open');
+}
+function closeDetail(){document.getElementById('detail-sheet').classList.remove('open');}
+
+// ── iframe / embed compatibility ──────────────────────────────
+// Tell the parent page our height so Experience Builder can size
+// the embed widget correctly (postMessage approach).
+function notifyHeight() {
+  const h = document.documentElement.scrollHeight;
+  try { window.parent.postMessage({ type: 'setHeight', height: h }, '*'); } catch(e) {}
+}
+// Leaflet needs invalidateSize() when its container becomes visible
+// inside an iframe (avoids grey tiles / wrong centre).
+window.addEventListener('load', () => {
+  setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+  notifyHeight();
+});
+window.addEventListener('resize', () => {
+  if (map) map.invalidateSize();
+  notifyHeight();
+});
+</script>
+</body>
+</html>

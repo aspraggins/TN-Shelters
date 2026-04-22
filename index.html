@@ -14,14 +14,31 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --bg: #f0f2f5; --surface: #ffffff; --surface2: #f7f8fa; --border: #e2e5ea;
-    --text: #0f1117; --text2: #5a6070; --text3: #9aa0ae;
+    --text: #0f1117; --text2: #444c5c; --text3: #6b7280;
     --open: #00a86b; --open-bg: #e6f7f1;
     --tema-blue: #002868; --tema-red: #BF0A30;
+    --focus: #ffbf47;
     --shadow: 0 2px 12px rgba(0,0,0,0.08); --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
     --radius: 14px; --radius-sm: 8px;
   }
   html, body { height: 100%; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
   #app { display: flex; flex-direction: column; height: 100%; min-height: 100vh; max-width: 480px; margin: 0 auto; background: var(--bg); }
+
+  /* ── Skip link ── */
+  .skip-link {
+    position: absolute; top: -100px; left: 0; z-index: 9999;
+    background: var(--focus); color: #000; font-weight: 700; font-size: 14px;
+    padding: 10px 16px; border-radius: 0 0 8px 0; text-decoration: none;
+    transition: top 0.2s;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* ── Global focus ring ── */
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 
   /* Header */
   #header { background: var(--tema-blue); padding: 12px 16px 10px; flex-shrink: 0; z-index: 100; }
@@ -31,57 +48,60 @@
   .app-title-text { color: white; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
   .location-pill {
     display: flex; align-items: center; gap: 5px; font-size: 12px; font-family: 'DM Mono', monospace;
-    color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 20px; padding: 4px 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    color: white; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.5);
+    border-radius: 20px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    font-weight: 600; min-height: 44px;
   }
-  .location-pill:hover { background: rgba(255,255,255,0.25); color: white; }
+  .location-pill:hover { background: rgba(255,255,255,0.28); }
+  .location-pill:focus-visible { outline-color: var(--focus); }
+
   .search-wrap { position: relative; margin-bottom: 8px; }
-  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
   #search-input {
-    width: 100%; padding: 9px 9px 9px 34px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-    font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--surface); color: var(--text); outline: none;
+    width: 100%; padding: 10px 10px 10px 34px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 16px; /* 16px prevents iOS zoom */
+    background: var(--surface); color: var(--text); outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  #search-input:focus { border-color: var(--tema-blue); box-shadow: 0 0 0 3px rgba(0,40,104,0.12); }
+  #search-input:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(255,191,71,0.35); }
   #search-input::placeholder { color: var(--text3); }
+
   /* Filter grid */
   .filter-grid { padding-bottom: 6px; }
-  .fg-type-row {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
-    margin-bottom: 6px;
-  }
+  .fg-type-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 6px; }
   .fgt {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
-    cursor: pointer; user-select: none; opacity: 0.55; transition: opacity 0.15s, transform 0.15s;
+    cursor: pointer; user-select: none; opacity: 0.6; transition: opacity 0.15s, transform 0.15s;
+    background: none; border: none; padding: 2px 0;
+    border-radius: 8px;
   }
-  .fgt:hover { opacity: 0.8; }
+  .fgt:hover { opacity: 0.85; }
   .fgt.active { opacity: 1; transform: scale(1.08); }
+  .fgt:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; opacity: 1; }
   .fgt-icon {
     width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
     box-shadow: 0 1px 4px rgba(0,0,0,0.25);
     border: 2px solid transparent; transition: border-color 0.15s;
   }
   .fgt.active .fgt-icon { border-color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-  .fgt-all .fgt-icon, .fgt-icon.fgt-all { background: rgba(255,255,255,0.2); }
   .fgt-label {
-    font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.85);
+    font-size: 9px; font-weight: 700; color: white;
     text-align: center; line-height: 1.1; letter-spacing: 0.2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
-  .fgt.active .fgt-label { color: white; }
 
   /* Amenity toggles */
   .fg-amenity-row { display: flex; gap: 6px; }
   .amenity-toggle {
-    flex: 1; text-align: center; padding: 5px 4px;
-    border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.25);
-    font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.15s; user-select: none;
+    flex: 1; text-align: center; padding: 8px 4px;
+    border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.4);
+    font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.12);
+    color: white; cursor: pointer; transition: all 0.15s; user-select: none;
+    min-height: 44px; display: flex; align-items: center; justify-content: center;
   }
   .amenity-toggle.active { background: white; border-color: white; color: var(--tema-blue); }
-  .amenity-toggle:hover:not(.active) { background: rgba(255,255,255,0.2); color: white; }
+  .amenity-toggle:hover:not(.active) { background: rgba(255,255,255,0.22); }
+  .amenity-toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
   /* Map */
   #map-container { flex-shrink: 0; height: 36vh; position: relative; }
@@ -89,50 +109,60 @@
   .map-handle { position: absolute; bottom: 0; left: 0; right: 0; height: 18px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; z-index: 500; background: linear-gradient(transparent, rgba(0,0,0,0.05)); }
   .handle-bar { width: 36px; height: 4px; background: rgba(255,255,255,0.8); border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
   #fab-locate {
-    position: absolute; bottom: 14px; right: 12px; width: 44px; height: 44px;
+    position: absolute; bottom: 14px; right: 12px; width: 48px; height: 48px;
     background: var(--tema-blue); color: white; border: none; border-radius: 50%; cursor: pointer;
     display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0,40,104,0.4);
     transition: all 0.2s; z-index: 400;
   }
-  #fab-locate:hover { transform: scale(1.08); } #fab-locate:active { transform: scale(0.95); }
+  #fab-locate:hover { transform: scale(1.08); }
+  #fab-locate:active { transform: scale(0.95); }
+  #fab-locate:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 
   /* List */
   #list-section { flex: 1; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
   .list-header { position: sticky; top: 0; background: var(--bg); padding: 10px 16px 6px; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
   .list-count { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; }
-  .sort-toggle { font-size: 12px; color: var(--tema-blue); font-weight: 600; cursor: pointer; }
+  .sort-toggle {
+    font-size: 12px; color: var(--tema-blue); font-weight: 700; cursor: pointer;
+    padding: 6px 10px; border-radius: 6px; border: none; background: none;
+    min-height: 44px; display: flex; align-items: center;
+  }
+  .sort-toggle:focus-visible { outline: 3px solid var(--focus); }
   #shelter-list { display: flex; flex-direction: column; padding: 0 0 80px; }
 
   /* Card */
   .shelter-card {
     background: var(--surface); margin: 0 12px 8px; border-radius: var(--radius);
-    box-shadow: var(--shadow); border: 1.5px solid transparent; cursor: pointer; transition: all 0.2s; overflow: hidden;
+    box-shadow: var(--shadow); border: 2px solid transparent; cursor: pointer; transition: all 0.2s; overflow: hidden;
   }
   .shelter-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+  .shelter-card:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-color: transparent; }
   .shelter-card.selected { border-color: var(--tema-blue); box-shadow: 0 0 0 3px rgba(0,40,104,0.1), var(--shadow); }
   .card-body { display: flex; align-items: stretch; }
   .card-strip { width: 5px; flex-shrink: 0; }
   .card-content { flex: 1; padding: 13px 13px 10px; min-width: 0; }
   .card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
-  .type-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .type-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; overflow: hidden; }
   .card-titles { flex: 1; min-width: 0; }
   .card-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
   .card-type-label { font-size: 11px; font-weight: 600; margin-top: 1px; }
   .card-address { font-size: 12px; color: var(--text2); line-height: 1.4; margin-bottom: 7px; }
   .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .dist-pill { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 500; color: var(--tema-blue); background: #e6eaf5; padding: 3px 8px; border-radius: 6px; }
+  .dist-pill { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 600; color: #003a8c; background: #dce6fb; padding: 3px 8px; border-radius: 6px; }
   .amenity-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
-  .amenity-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); white-space: nowrap; }
-  .amenity-badge.ada       { background: #eef4ff; border-color: #c7d9fa; color: #1a4fb5; }
-  .amenity-badge.pets      { background: #fef5e7; border-color: #f5d79a; color: #8a5c00; }
-  .amenity-badge.generator { background: #fdfce8; border-color: #e8e27a; color: #6b6000; }
+  .amenity-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+  .amenity-badge.ada       { background: #dce9ff; border: 1px solid #7aabf7; color: #003a8c; }
+  .amenity-badge.pets      { background: #fff0cc; border: 1px solid #d4920a; color: #6b4200; }
+  .amenity-badge.generator { background: #fdfce8; border: 1px solid #b8a800; color: #4a4000; }
   .card-footer { border-top: 1px solid var(--border); display: flex; }
   .card-action {
-    flex: 1; padding: 9px 6px; display: flex; align-items: center; justify-content: center; gap: 4px;
-    font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.15s;
+    flex: 1; padding: 12px 6px; display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; transition: all 0.15s;
     text-decoration: none; border: none; background: none; font-family: 'DM Sans', sans-serif;
+    min-height: 44px;
   }
   .card-action:hover { background: var(--surface2); color: var(--tema-blue); }
+  .card-action:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
   .card-action + .card-action { border-left: 1px solid var(--border); }
   .card-action.primary { color: var(--tema-blue); }
 
@@ -149,13 +179,12 @@
   .leaflet-popup-content-wrapper { border-radius: var(--radius-sm) !important; box-shadow: var(--shadow-lg) !important; font-family: 'DM Sans',sans-serif !important; padding: 0 !important; }
   .leaflet-popup-content { margin: 0 !important; }
   .pop { padding: 11px 13px; min-width: 160px; }
-  .pop-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  .pop-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--text); }
   .pop-type { font-size: 11px; font-weight: 600; }
-  .pop-hrs { font-size: 11px; color: var(--text2); margin-top: 4px; }
 
   /* Detail Sheet */
   #detail-sheet { position: fixed; inset: 0; z-index: 2000; pointer-events: none; }
-  #detail-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); opacity: 0; transition: opacity 0.3s; }
+  #detail-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); opacity: 0; transition: opacity 0.3s; }
   #detail-content {
     position: absolute; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto;
     background: var(--surface); border-radius: 20px 20px 0 0;
@@ -167,121 +196,89 @@
   #detail-sheet.open #detail-overlay { opacity: 1; }
   #detail-sheet.open #detail-content { transform: translateY(0); }
   .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+  .sheet-close-btn {
+    position: absolute; top: 12px; right: 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 50%; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; line-height: 1; color: var(--text2);
+  }
+  .sheet-close-btn:focus-visible { outline: 3px solid var(--focus); }
   .sheet-banner { margin: 14px 20px 0; border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
-  .banner-icon { font-size: 22px; }
   .banner-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .banner-desc { font-size: 12px; margin-top: 2px; opacity: 0.82; line-height: 1.4; }
   .sheet-header { padding: 14px 20px 10px; }
   .sheet-name { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 3px; }
   .sheet-addr { font-size: 13px; color: var(--text2); line-height: 1.4; }
-  .sheet-dist { font-size: 12px; font-family: 'DM Mono',monospace; font-weight: 600; margin-top: 5px; }
+  .sheet-dist { font-size: 12px; font-family: 'DM Mono',monospace; font-weight: 700; margin-top: 5px; color: #003a8c; }
   .sdiv { height: 1px; background: var(--border); margin: 0 20px; }
   .services-sec { padding: 14px 20px; }
   .sec-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); margin-bottom: 8px; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text2); }
-  .contact-sec { padding: 12px 20px 14px; }
-  .contact-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; }
-  .contact-ico { background: var(--surface2); border-radius: 8px; padding: 7px; display: flex; color: var(--text2); }
+  .tag { padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--text2); }
   .nav-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 20px; }
-  .nav-btn { padding: 13px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; font-family: 'DM Sans',sans-serif; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; transition: opacity 0.15s; }
+  .nav-btn { padding: 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; font-family: 'DM Sans',sans-serif; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; transition: opacity 0.15s; min-height: 48px; }
   .nav-btn:hover { opacity: 0.88; }
-  .nav-btn.goo { background: #4285F4; color: white; }
+  .nav-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .nav-btn.goo { background: #1558d6; color: white; }
   .nav-btn.apl { background: #111; color: white; }
 
   @keyframes loadbar { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
   @media(min-width:600px){ #app{ box-shadow: var(--shadow-lg); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="header">
+<a class="skip-link" href="#shelter-list">Skip to shelter list</a>
+<div id="app" role="application" aria-label="TEMA Shelter Finder">
+  <header id="header" role="banner">
     <div class="header-top">
       <div class="app-title">
-        <div class="tn-badge">TN</div>
+        <div class="tn-badge" aria-hidden="true">TN</div>
         <div class="app-title-text">TEMA Shelter Finder</div>
       </div>
-      <div class="location-pill" onclick="requestLocation()">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      <button class="location-pill" onclick="requestLocation()" aria-label="Use my location to find nearby shelters">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
         <span id="loc-label">Locate me</span>
-      </div>
+      </button>
     </div>
     <div class="search-wrap">
-      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input id="search-input" type="text" placeholder="Search by name, city, county…" oninput="onSearch()">
+      <label for="search-input" class="sr-only">Search shelters</label>
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="search-input" type="search" placeholder="Search by name, city, county…" oninput="onSearch()" aria-label="Search shelters by name, city, or county" autocomplete="off">
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div id="loading-bar" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;flex:1;margin-right:10px;overflow:hidden">
+      <div id="loading-bar" role="progressbar" aria-label="Loading shelters" aria-valuetext="Loading" style="display:none;height:3px;background:rgba(255,255,255,0.3);border-radius:2px;flex:1;margin-right:10px;overflow:hidden">
         <div style="height:100%;width:40%;background:white;border-radius:2px;animation:loadbar 1.2s ease-in-out infinite"></div>
       </div>
-      <div id="last-refreshed" style="font-size:10px;color:rgba(255,255,255,0.5);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:auto"></div>
+      <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:auto"></div>
     </div>
-    <div class="filter-grid">
-      <div class="fg-type-row">
-        <div class="fgt active" onclick="setFilter(this,'all')">
-          <div class="fgt-icon fgt-all">
-            <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.25)"/><text x="20" y="27" text-anchor="middle" font-family="Arial Black" font-size="18" font-weight="900" fill="white">✦</text></svg>
-          </div>
-          <div class="fgt-label">All</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'storm')">
-          <div class="fgt-icon">${ICON_SVG.storm}</div>
-          <div class="fgt-label">Storm</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'overnight')">
-          <div class="fgt-icon">${ICON_SVG.overnight}</div>
-          <div class="fgt-label">Overnight</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'warming')">
-          <div class="fgt-icon">${ICON_SVG.warming}</div>
-          <div class="fgt-label">Warming</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'cooling')">
-          <div class="fgt-icon">${ICON_SVG.cooling}</div>
-          <div class="fgt-label">Cooling</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'evacuation')">
-          <div class="fgt-icon">${ICON_SVG.evacuation}</div>
-          <div class="fgt-label">Evacuation</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'reunification')">
-          <div class="fgt-icon">${ICON_SVG.reunification}</div>
-          <div class="fgt-label">Reunify</div>
-        </div>
-        <div class="fgt" onclick="setFilter(this,'respite')">
-          <div class="fgt-icon">${ICON_SVG.respite}</div>
-          <div class="fgt-label">Respite</div>
-        </div>
-      </div>
-      <div class="fg-amenity-row">
-        <div class="amenity-toggle" data-amenity="ada" onclick="setAmenity(this,'ada')">♿ ADA</div>
-        <div class="amenity-toggle" data-amenity="pets" onclick="setAmenity(this,'pets')">🐾 Pets OK</div>
-        <div class="amenity-toggle" data-amenity="generator" onclick="setAmenity(this,'generator')">⚡ Generator</div>
-      </div>
-    </div>
-  </div>
+    <nav id="filter-grid" aria-label="Filter shelters by type and amenities"></nav>
+  </header>
 
-  <div id="map-container">
-    <div id="map"></div>
-    <div class="map-handle"><div class="handle-bar"></div></div>
-    <button id="fab-locate" onclick="requestLocation()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+  <div id="map-container" role="region" aria-label="Map showing shelter locations">
+    <div id="map" aria-hidden="true"></div>
+    <div class="map-handle" aria-hidden="true"><div class="handle-bar"></div></div>
+    <button id="fab-locate" onclick="requestLocation()" aria-label="Center map on my location">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     </button>
   </div>
 
-  <div id="list-section">
+  <main id="list-section" aria-label="Open shelters">
     <div class="list-header">
-      <div class="list-count" id="list-count">Loading…</div>
-      <div class="sort-toggle" id="sort-label" onclick="toggleSort()">📍 Nearest first</div>
+      <div class="list-count" id="list-count" aria-live="polite" aria-atomic="true">Loading…</div>
+      <button class="sort-toggle" id="sort-label" onclick="toggleSort()" aria-label="Sort shelters by nearest first">📍 Nearest first</button>
     </div>
-    <div id="shelter-list"></div>
-  </div>
+    <div id="shelter-list" role="list" aria-label="Shelter results"></div>
+  </main>
 </div>
 
-<div id="detail-sheet">
+<div id="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detail-shelter-name" hidden>
   <div id="detail-overlay" onclick="closeDetail()"></div>
   <div id="detail-content">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <button class="sheet-close-btn" onclick="closeDetail()" aria-label="Close shelter details">×</button>
     <div id="detail-body"></div>
   </div>
 </div>
@@ -563,7 +560,40 @@ let markers={}, shelters=[];
 let activeFilter='all', amenityFilter=null, searchTerm='', selectedId=null, sortByDistance=true;
 let refreshTimer=null;
 
+function buildFilterGrid() {
+  const TYPE_FILTERS = [
+    { key:'all',           label:'All Types',            short:'All',       svg:`<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.25)"/><text x="20" y="27" text-anchor="middle" font-family="Arial Black" font-size="18" font-weight="900" fill="white">✦</text></svg>` },
+    { key:'storm',         label:'Storm Shelter',        short:'Storm',     svg: ICON_SVG.storm },
+    { key:'overnight',     label:'Overnight Shelter',    short:'Overnight', svg: ICON_SVG.overnight },
+    { key:'warming',       label:'Warming Center',       short:'Warming',   svg: ICON_SVG.warming },
+    { key:'cooling',       label:'Cooling Center',       short:'Cooling',   svg: ICON_SVG.cooling },
+    { key:'evacuation',    label:'Evacuation Center',    short:'Evacuation',svg: ICON_SVG.evacuation },
+    { key:'reunification', label:'Reunification Center', short:'Reunify',   svg: ICON_SVG.reunification },
+    { key:'respite',       label:'Respite Center',       short:'Respite',   svg: ICON_SVG.respite },
+  ];
+
+  const typeHtml = TYPE_FILTERS.map(t => `
+    <button class="fgt ${t.key==='all'?'active':''}"
+      onclick="setFilter(this,'${t.key}')"
+      aria-pressed="${t.key==='all'}"
+      aria-label="${t.label}">
+      <div class="fgt-icon" aria-hidden="true">${t.svg}</div>
+      <div class="fgt-label" aria-hidden="true">${t.short}</div>
+    </button>`).join('');
+
+  document.getElementById('filter-grid').innerHTML = `
+    <div class="filter-grid">
+      <div class="fg-type-row" role="group" aria-label="Filter by shelter type">${typeHtml}</div>
+      <div class="fg-amenity-row" role="group" aria-label="Filter by amenity">
+        <button class="amenity-toggle" data-amenity="ada"       onclick="setAmenity(this,'ada')"       aria-pressed="false" aria-label="Filter: ADA Accessible">♿ ADA</button>
+        <button class="amenity-toggle" data-amenity="pets"      onclick="setAmenity(this,'pets')"      aria-pressed="false" aria-label="Filter: Pets OK">🐾 Pets OK</button>
+        <button class="amenity-toggle" data-amenity="generator" onclick="setAmenity(this,'generator')" aria-pressed="false" aria-label="Filter: Backup Power available">⚡ Backup Power</button>
+      </div>
+    </div>`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  buildFilterGrid();
   initMap();
   await fetchShelters();
   if(navigator.geolocation) navigator.geolocation.getCurrentPosition(onLocationSuccess,()=>{},{timeout:5000});
@@ -639,16 +669,17 @@ function haversine(la1,lo1,la2,lo2){
 function r(d){return d*Math.PI/180;}
 
 function setFilter(el,f){
-  document.querySelectorAll('.fgt').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active'); activeFilter=f; renderList();
+  document.querySelectorAll('.fgt').forEach(c=>{ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
+  el.classList.add('active'); el.setAttribute('aria-pressed','true');
+  activeFilter=f; renderList();
 }
 function setAmenity(el,a){
   if(amenityFilter===a){
-    el.classList.remove('active');
+    el.classList.remove('active'); el.setAttribute('aria-pressed','false');
     amenityFilter=null;
   } else {
-    document.querySelectorAll('.amenity-toggle').forEach(c=>c.classList.remove('active'));
-    el.classList.add('active');
+    document.querySelectorAll('.amenity-toggle').forEach(c=>{ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
+    el.classList.add('active'); el.setAttribute('aria-pressed','true');
     amenityFilter=a;
   }
   renderList();
@@ -692,7 +723,12 @@ function renderCard(s){
     s.pets      ? `<span class="amenity-badge pets">🐾 Pets OK</span>` : '',
     s.generator ? `<span class="amenity-badge generator">⚡ Generator</span>` : '',
   ].filter(Boolean).join('');
-  return `<div class="shelter-card ${selectedId===s.id?'selected':''}" id="card-${s.id}" onclick="selectShelter(${s.id})">
+  return `<article class="shelter-card ${selectedId===s.id?'selected':''}" id="card-${s.id}"
+    role="listitem"
+    tabindex="0"
+    aria-label="${s.name}, ${tc.label}, ${s.city} — ${dist?s.distance.toFixed(1)+' miles away':''}"
+    onclick="selectShelter(${s.id})"
+    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter(${s.id})}">
     <div class="card-body">
       <div class="card-strip" style="background:${tc.color}"></div>
       <div class="card-content">
@@ -711,25 +747,26 @@ function renderCard(s){
       </div>
     </div>
     <div class="card-footer">
-      <button class="card-action primary" onclick="event.stopPropagation();openDetail(${s.id})">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <button class="card-action primary" onclick="event.stopPropagation();openDetail(${s.id})" aria-label="View details for ${s.name}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
         Details
       </button>
-      <button class="card-action" onclick="event.stopPropagation();openDetail(${s.id})">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+      <button class="card-action" onclick="event.stopPropagation();openDetail(${s.id})" aria-label="Get directions to ${s.name}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         Directions
       </button>
     </div>
-  </div>`;
+  </article>`;
 }
 
+let _lastFocusBeforeDetail = null;
 function openDetail(id){
   const s=shelters.find(x=>x.id===id); if(!s)return;
-  const tc=TYPES[s.type]||{label:s.type,emoji:'📍',color:'#666',desc:''};
+  _lastFocusBeforeDetail = document.activeElement;
+  const tc=TYPES[s.type]||{label:s.type,color:'#666',desc:''};
   const fullAddr=`${s.address}, ${s.city}, ${s.state} ${s.zip}`.trim().replace(/,\s*$/, '');
   const addr=encodeURIComponent(fullAddr);
-  const is24=s.hours==='24 Hours';
-  const distLine=s.distance!==null?`<div class="sheet-dist" style="color:${tc.color}">📍 ${s.distance.toFixed(1)} mi away</div>`:'';
+  const distLine=s.distance!==null?`<div class="sheet-dist">📍 ${s.distance.toFixed(1)} mi away</div>`:'';
   const iconSvg = ICON_SVG[s.type] || '';
   const notesSec=s.hoursNote?`
     <div class="sdiv"></div>
@@ -746,11 +783,11 @@ function openDetail(id){
 
   document.getElementById('detail-body').innerHTML=`
     <div class="sheet-banner" style="background:${tc.color}18;border:1px solid ${tc.color}30;margin-top:14px">
-      <div class="banner-icon"><div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0">${iconSvg}</div></div>
+      <div aria-hidden="true" style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0">${iconSvg}</div>
       <div><div class="banner-label" style="color:${tc.color}">${tc.label}</div><div class="banner-desc" style="color:${tc.color}">${tc.desc}</div></div>
     </div>
     <div class="sheet-header">
-      <div class="sheet-name">${s.name}</div>
+      <h2 class="sheet-name" id="detail-shelter-name">${s.name}</h2>
       <div class="sheet-addr">${s.address}<br>${s.city}, ${s.state} ${s.zip}${s.county?' — '+s.county+' County':''}</div>
       ${distLine}
     </div>
@@ -758,16 +795,32 @@ function openDetail(id){
     ${servicesSec}
     <div class="sdiv"></div>
     <div class="nav-btns">
-      <a class="nav-btn goo" href="https://maps.google.com/?q=${addr}" target="_blank">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Google Maps
+      <a class="nav-btn goo" href="https://maps.google.com/?q=${addr}" target="_blank" rel="noopener" aria-label="Open ${s.name} in Google Maps (opens new tab)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Google Maps
       </a>
-      <a class="nav-btn apl" href="https://maps.apple.com/?q=${addr}" target="_blank">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Apple Maps
+      <a class="nav-btn apl" href="https://maps.apple.com/?q=${addr}" target="_blank" rel="noopener" aria-label="Open ${s.name} in Apple Maps (opens new tab)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Apple Maps
       </a>
     </div>`;
-  document.getElementById('detail-sheet').classList.add('open');
+
+  const sheet = document.getElementById('detail-sheet');
+  sheet.removeAttribute('hidden');
+  sheet.classList.add('open');
+  // Trap focus inside sheet — move to close button
+  setTimeout(()=>{ const btn = sheet.querySelector('.sheet-close-btn'); if(btn) btn.focus(); }, 50);
+
+  // Escape key closes
+  sheet._escHandler = e => { if(e.key==='Escape') closeDetail(); };
+  document.addEventListener('keydown', sheet._escHandler);
 }
-function closeDetail(){document.getElementById('detail-sheet').classList.remove('open');}
+
+function closeDetail(){
+  const sheet = document.getElementById('detail-sheet');
+  sheet.classList.remove('open');
+  setTimeout(()=>{ sheet.setAttribute('hidden',''); }, 350);
+  document.removeEventListener('keydown', sheet._escHandler);
+  if(_lastFocusBeforeDetail) _lastFocusBeforeDetail.focus();
+}
 
 // ── iframe / embed compatibility ──────────────────────────────
 // Tell the parent page our height so Experience Builder can size

@@ -90,7 +90,11 @@
   .filter-btn:hover { border-color: var(--tema-blue); color: var(--tema-blue); }
   .filter-btn:focus-visible { outline: 3px solid var(--focus); }
   .filter-btn.has-filter { background: var(--tema-blue); border-color: var(--tema-blue); color: white; }
-  .active-filters { display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; overflow: hidden; }
+  /* Active-filter chip row lives beneath the header row — chips wrap to
+     new lines (stack vertically when space is tight) instead of pushing
+     the Filter button off-screen. Collapses to zero height when empty. */
+  .active-filters { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; padding: 0 16px 8px; }
+  .active-filters:empty { display: none; }
   .active-chip {
     display: flex; align-items: center; gap: 3px;
     background: var(--tema-blue); color: white;
@@ -153,7 +157,13 @@
 
   /* List */
   #list-section { flex: 1; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-  .list-header { position: sticky; top: 0; background: var(--bg); padding: 10px 16px 6px; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  /* Sticky wrapper — holds the header row, the active-filter chip row,
+     and the filter drawer so they ALL stay visible when the list is
+     scrolled. Previously only .list-header was sticky, which hid the
+     drawer behind the scrolled list. */
+  .list-controls { position: sticky; top: 0; z-index: 10; background: var(--bg); box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
+  .list-header { padding: 10px 16px 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .list-count { font-size: 12px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.6px; }
   .sort-toggle {
     font-size: 12px; color: var(--tema-blue); font-weight: 700; cursor: pointer;
@@ -304,22 +314,25 @@
   </div>
 
   <main id="list-section" aria-label="Open shelters">
-    <div class="list-header">
-      <div>
-        <div class="list-count" id="list-count" aria-live="polite" aria-atomic="true">Loading…</div>
-        <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px"></div>
+    <!-- Sticky wrapper keeps header, chips, and drawer visible on scroll -->
+    <div class="list-controls">
+      <div class="list-header">
+        <div>
+          <div class="list-count" id="list-count" aria-live="polite" aria-atomic="true">Loading…</div>
+          <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px"></div>
+        </div>
+        <div class="header-actions">
+          <button id="filter-toggle-btn" class="filter-btn" onclick="toggleFilterDrawer()" aria-expanded="false" aria-controls="filter-drawer" aria-label="Open shelter filters">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            Filter
+          </button>
+          <button class="sort-toggle" id="sort-label" onclick="toggleSort()" aria-label="Sort shelters by nearest first">📍 Nearest</button>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div class="active-filters" id="active-filters" aria-label="Active filters" aria-live="polite"></div>
-        <button id="filter-toggle-btn" class="filter-btn" onclick="toggleFilterDrawer()" aria-expanded="false" aria-controls="filter-drawer" aria-label="Open shelter filters">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          Filter
-        </button>
-        <button class="sort-toggle" id="sort-label" onclick="toggleSort()" aria-label="Sort shelters by nearest first">📍 Nearest</button>
+      <div class="active-filters" id="active-filters" aria-label="Active filters" aria-live="polite"></div>
+      <div id="filter-drawer" aria-hidden="true">
+        <nav id="filter-grid" aria-label="Filter shelters by type and amenities"></nav>
       </div>
-    </div>
-    <div id="filter-drawer" aria-hidden="true">
-      <nav id="filter-grid" aria-label="Filter shelters by type and amenities"></nav>
     </div>
     <div id="shelter-list" role="list" aria-label="Shelter results"></div>
   </main>

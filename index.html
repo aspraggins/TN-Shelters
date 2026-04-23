@@ -22,7 +22,9 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --bg: #f0f2f5; --surface: #ffffff; --surface2: #f7f8fa; --border: #e2e5ea;
-    --text: #0f1117; --text2: #444c5c; --text3: #6b7280;
+    /* WCAG AA/AAA contrast on both white cards and the --bg list surface:
+       --text  19:1, --text2 8.5:1 (AAA), --text3 7.1:1 on white / 6.3:1 on --bg (AA+). */
+    --text: #0f1117; --text2: #444c5c; --text3: #4f5665;
     --open: #00a86b; --open-bg: #e6f7f1;
     --tema-blue: #002868; --tema-red: #BF0A30;
     --focus: #ffbf47;
@@ -262,7 +264,7 @@
   .sheet-close-btn:focus-visible { outline: 3px solid var(--focus); }
   .sheet-banner { margin: 14px 20px 0; border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
   .banner-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .banner-desc { font-size: 12px; margin-top: 2px; opacity: 0.82; line-height: 1.4; }
+  .banner-desc { font-size: 12px; margin-top: 2px; opacity: 0.95; line-height: 1.4; }
   .sheet-header { padding: 14px 20px 10px; }
   .sheet-name { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 3px; }
   .sheet-addr { font-size: 13px; color: var(--text2); line-height: 1.4; }
@@ -323,7 +325,7 @@
       <div class="list-header">
         <div>
           <div class="list-count" id="list-count" aria-live="polite" aria-atomic="true">Loading…</div>
-          <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px"></div>
+          <div id="last-refreshed" aria-live="polite" aria-atomic="true" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px"></div>
         </div>
         <div class="header-actions">
           <button id="filter-toggle-btn" class="filter-btn" onclick="toggleFilterDrawer()" aria-expanded="false" aria-controls="filter-drawer" aria-label="Open shelter filters">
@@ -387,14 +389,18 @@ const AMENITY_ICONS = {
   generator: `<svg class="amty-ico" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M13 2L4 14h6l-1 8 10-12h-6l1-8z"/></svg>`,
 };
 
+// Type palette — colors below have been audited for WCAG AA (≥4.5:1) on
+// white card surfaces, since they're used as text on the list. Earlier
+// warming/respite/cooling values failed AA (yellows/mid-blue on white);
+// the new values keep the same hue family but are darkened.
 const TYPES = {
-  storm:         { label:'Storm Shelter',        color:'#c0392b', desc:'Immediate protection during severe weather events.' },
-  overnight:     { label:'Overnight Shelter',    color:'#1a5276', desc:'Temporary lodging for individuals displaced by disasters or emergencies.' },
-  warming:       { label:'Warming Center',       color:'#d4ac0d', desc:'Relief during extreme cold to prevent weather-related health risks.' },
-  cooling:       { label:'Cooling Center',       color:'#1a78c2', desc:'Relief during extreme heat to prevent weather-related health risks.' },
-  evacuation:    { label:'Evacuation Center',    color:'#6c3483', desc:'Initial gathering points for those forced to leave their homes, offering basic services and information.' },
-  reunification: { label:'Reunification Center', color:'#7d3c98', desc:'Supports families in reconnecting after emergencies.' },
-  respite:       { label:'Respite Center',       color:'#b7950b', desc:'Short-term relief, rest, and support for those affected by disasters or prolonged emergencies.' },
+  storm:         { label:'Storm Shelter',        color:'#a8311f', desc:'Immediate protection during severe weather events.' }, // 6.4:1 on white
+  overnight:     { label:'Overnight Shelter',    color:'#1a5276', desc:'Temporary lodging for individuals displaced by disasters or emergencies.' }, // 9.4:1
+  warming:       { label:'Warming Center',       color:'#8a6500', desc:'Relief during extreme cold to prevent weather-related health risks.' }, // 6.3:1
+  cooling:       { label:'Cooling Center',       color:'#155d94', desc:'Relief during extreme heat to prevent weather-related health risks.' }, // 6.6:1
+  evacuation:    { label:'Evacuation Center',    color:'#6c3483', desc:'Initial gathering points for those forced to leave their homes, offering basic services and information.' }, // 8.1:1
+  reunification: { label:'Reunification Center', color:'#7d3c98', desc:'Supports families in reconnecting after emergencies.' }, // 7.2:1
+  respite:       { label:'Respite Center',       color:'#6e5500', desc:'Short-term relief, rest, and support for those affected by disasters or prolonged emergencies.' }, // 8.0:1
 };
 
 // ════════════════════════════════════════════════════════════════

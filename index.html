@@ -922,6 +922,11 @@ function openDetail(id){
   // Look up by shelter ID so filter/sort re-renders don't corrupt the lookup.
   const s = getShelter(id); if(!s) return;
   _lastFocusBeforeDetail = document.activeElement;
+  // Keep the map in sync with the detail sheet: pan to the shelter, open
+  // its popup, highlight its marker, and mark its list card as selected.
+  // Fires for both the Details and Directions buttons since both route
+  // through openDetail().
+  selectShelter(id);
   const tc=TYPES[s.type]||{label:s.type,color:'#666',desc:''};
   const fullAddr=`${s.address}, ${s.city}, ${s.state} ${s.zip}`.trim().replace(/,\s*$/, '');
   const addr=encodeURIComponent(fullAddr);

@@ -194,7 +194,7 @@
      wraps or shrinks. */
   .card-name-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .card-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; flex: 1; min-width: 0; }
-  .card-type-label { font-size: 11px; font-weight: 600; margin-top: 1px; }
+  .card-type-label { font-size: 12px; font-weight: 600; margin-top: 1px; }
   .card-address { font-size: 12px; color: var(--text2); line-height: 1.4; margin-bottom: 0; }
   .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .dist-pill { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 600; color: #003a8c; background: #dce6fb; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; white-space: nowrap; }
@@ -447,17 +447,20 @@ const AGOL = {
 // Maps the exact shelterType coded values (stored values) to internal TYPES keys.
 function normaliseType(raw) {
   if (!raw) return 'overnight';
-  const map = {
-    'Storm Shelter':        'storm',
-    'Overnight':            'overnight',
-    'Warming':              'warming',
-    'Cooling':              'cooling',
-    'Respite Center':       'respite',
-    'Evacuation Center':    'evacuation',
-    'Reunification Center': 'reunification',
-  };
-  // Exact match first, then case-insensitive fallback
-  return map[raw] || map[Object.keys(map).find(k => k.toLowerCase() === raw.toString().toLowerCase())] || 'overnight';
+  // Substring match on a lowercased version of the raw string so any
+  // reasonable variant lands on the right key: "Cooling", "Cooling Center",
+  // "cooling center", "Storm Shelter", "Community Safe Zone", etc.
+  // Previously we did exact-key lookup and missed rows like "Cooling Center",
+  // which silently fell back to the overnight icon.
+  const s = String(raw).toLowerCase();
+  if (s.includes('storm') || s.includes('safe zone') || s.includes('community')) return 'storm';
+  if (s.includes('warming'))       return 'warming';
+  if (s.includes('cooling'))       return 'cooling';
+  if (s.includes('respite'))       return 'respite';
+  if (s.includes('reunification')) return 'reunification';
+  if (s.includes('evacuation'))    return 'evacuation';
+  if (s.includes('overnight'))     return 'overnight';
+  return 'overnight';
 }
 
 // Format an ArcGIS Date field (epoch milliseconds) into a readable time string.

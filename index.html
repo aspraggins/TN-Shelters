@@ -187,6 +187,15 @@
   .amenity-badge.ada       { background: #dce9ff; border: 1px solid #7aabf7; color: #003a8c; }
   .amenity-badge.pets      { background: #fff0cc; border: 1px solid #d4920a; color: #6b4200; }
   .amenity-badge.generator { background: #fdfce8; border: 1px solid #b8a800; color: #4a4000; }
+  /* Inline SVG amenity icons — used in place of emoji so they render on
+     environments (some Experience Builder iframes, Windows kiosks) whose
+     emoji fonts are missing or blocked. Uses currentColor so the icon
+     picks up whatever text color surrounds it. */
+  .amty-ico { vertical-align: -2px; margin-right: 4px; flex-shrink: 0; display: inline-block; }
+  /* Larger, forced-white icon inside the dark-blue filter drawer so the
+     paw/wheelchair/bolt have enough visual mass to contrast the navy bg. */
+  .amenity-toggle .amty-ico { width: 15px; height: 15px; color: #fff; vertical-align: -3px; }
+  .amenity-toggle.active .amty-ico { color: var(--tema-blue); }
   .card-footer { border-top: 1px solid var(--border); display: flex; }
   .card-action {
     flex: 1; padding: 12px 6px; display: flex; align-items: center; justify-content: center; gap: 4px;
@@ -397,6 +406,15 @@ const ICON_SVG = {
   </svg>`,
 };
 
+// Inline SVG amenity icons — replace emoji (♿ 🐾 ⚡) which render as
+// missing-glyph dots in some Experience Builder iframe sandboxes.
+// currentColor so icons match the surrounding text color everywhere.
+const AMENITY_ICONS = {
+  ada:       `<svg class="amty-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="3.5" r="1.8" fill="currentColor" stroke="none"/><path d="M10.5 7l1 5h4.5"/><path d="M16 12l2 5.5"/><circle cx="10" cy="17" r="4.5"/></svg>`,
+  pets:      `<svg class="amty-ico" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><circle cx="8" cy="6" r="2.3"/><circle cx="16" cy="6" r="2.3"/><circle cx="3.5" cy="11" r="2.1"/><circle cx="20.5" cy="11" r="2.1"/><path d="M12 11c-3.6 0-6.3 3-6.3 6.3 0 1.9 1.5 3.2 3.1 3.2 1 0 1.9-0.5 3.2-0.5s2.2 0.5 3.2 0.5c1.6 0 3.1-1.3 3.1-3.2 0-3.3-2.7-6.3-6.3-6.3z"/></svg>`,
+  generator: `<svg class="amty-ico" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M13 2L4 14h6l-1 8 10-12h-6l1-8z"/></svg>`,
+};
+
 const TYPES = {
   storm:         { label:'Storm Shelter',        color:'#c0392b', desc:'Immediate protection during severe weather events.' },
   overnight:     { label:'Overnight Shelter',    color:'#1a5276', desc:'Temporary lodging for individuals displaced by disasters or emergencies.' },
@@ -482,12 +500,13 @@ function buildHours(openMs, closeMs) {
 }
 
 // Build the services array from the three Yes/No fields.
+// Each tag is an HTML fragment containing an inline SVG icon + label.
 function buildServices(p) {
   const tags = [];
   const yes = v => v && v.toString().toLowerCase().startsWith('y');
-  if (yes(p.handicap))   tags.push('♿ Handicap Accessible');
-  if (yes(p.backpower))  tags.push('⚡ Backup Power');
-  if (yes(p.allowpets))  tags.push('🐾 Allows Pets / Animals');
+  if (yes(p.handicap))   tags.push(`${AMENITY_ICONS.ada} Handicap Accessible`);
+  if (yes(p.backpower))  tags.push(`${AMENITY_ICONS.generator} Backup Power`);
+  if (yes(p.allowpets))  tags.push(`${AMENITY_ICONS.pets} Allows Pets / Animals`);
   return tags;
 }
 
@@ -560,9 +579,14 @@ async function fetchShelters() {
       .map(featureToShelter)
       .filter(s => s.lat !== null && s.lng !== null); // drop records with no geometry
 
-    // Preserve distance values if we already have a user location
-    shelters = raw.map(s => ({
+    // Assign a synthetic, guaranteed-unique key to every shelter and use it
+    // as the canonical id for DOM ids, markers, and click handlers. This
+    // protects us if the service returns missing/duplicate OBJECTIDs, which
+    // was producing wrong-shelter lookups in Details/Directions.
+    shelters = raw.map((s, idx) => ({
       ...s,
+      objectId: s.id,          // preserve the original OBJECTID if needed
+      id: `s${idx}`,           // stable synthetic key for this fetch cycle
       distance: (userLat !== null)
         ? haversine(userLat, userLng, s.lat, s.lng)
         : null,
@@ -632,15 +656,16 @@ function buildFilterGrid() {
     <div class="filter-grid">
       <div class="fg-type-row" role="group" aria-label="Filter by shelter type">${typeHtml}</div>
       <div class="fg-amenity-row" role="group" aria-label="Filter by amenity">
-        <button class="amenity-toggle" data-amenity="ada"       onclick="setAmenity(this,'ada')"       aria-pressed="false" aria-label="Filter: Handicap Accessible">♿ Handicap Accessible</button>
-        <button class="amenity-toggle" data-amenity="pets"      onclick="setAmenity(this,'pets')"      aria-pressed="false" aria-label="Filter: Allows Pets / Animals">🐾 Allows Pets / Animals</button>
-        <button class="amenity-toggle" data-amenity="generator" onclick="setAmenity(this,'generator')" aria-pressed="false" aria-label="Filter: Backup Power available">⚡ Backup Power</button>
+        <button class="amenity-toggle" data-amenity="ada"       onclick="setAmenity(this,'ada')"       aria-pressed="false" aria-label="Filter: Handicap Accessible">${AMENITY_ICONS.ada} Handicap Accessible</button>
+        <button class="amenity-toggle" data-amenity="pets"      onclick="setAmenity(this,'pets')"      aria-pressed="false" aria-label="Filter: Allows Pets / Animals">${AMENITY_ICONS.pets} Allows Pets / Animals</button>
+        <button class="amenity-toggle" data-amenity="generator" onclick="setAmenity(this,'generator')" aria-pressed="false" aria-label="Filter: Backup Power available">${AMENITY_ICONS.generator} Backup Power</button>
       </div>
     </div>`;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   buildFilterGrid();
+  bindListHandlers();   // attach delegated card + button click/keyboard handlers
   initMap();
   await fetchShelters();
   if(navigator.geolocation) navigator.geolocation.getCurrentPosition(onLocationSuccess,()=>{},{timeout:5000});
@@ -831,19 +856,19 @@ function renderCard(s, i){
   const dist=s.distance!==null?`<span class="dist-pill">📍 ${s.distance.toFixed(1)} mi</span>`:'';
   const cityLine=[s.address,[s.city,s.state].filter(Boolean).join(', ')+(s.zip?` ${s.zip}`:''),s.county?`(${s.county} Co.)`:''].filter(Boolean).join(' · ');
   const amenities=[
-    s.ada       ? `<span class="amenity-badge ada">♿ Handicap Accessible</span>`    : '',
-    s.pets      ? `<span class="amenity-badge pets">🐾 Allows Pets / Animals</span>` : '',
-    s.generator ? `<span class="amenity-badge generator">⚡ Backup Power</span>`      : '',
+    s.ada       ? `<span class="amenity-badge ada">${AMENITY_ICONS.ada} Handicap Accessible</span>`          : '',
+    s.pets      ? `<span class="amenity-badge pets">${AMENITY_ICONS.pets} Allows Pets / Animals</span>`      : '',
+    s.generator ? `<span class="amenity-badge generator">${AMENITY_ICONS.generator} Backup Power</span>`     : '',
   ].filter(Boolean).join('');
-  // Use the stable shelter id (OBJECTID) for click handlers — not the list
-  // index, which changes whenever the list is filtered or re-sorted.
-  const sid = String(s.id).replace(/'/g,"\\'");
+  // Shelter id is written to data attributes and read at click time via
+  // event delegation (see the list-level listener below). This avoids any
+  // string-building bugs in inline onclick handlers.
+  const sidAttr = String(s.id).replace(/"/g,'&quot;');
   return `<article class="shelter-card ${String(selectedId)===String(s.id)?'selected':''}" id="card-${s.id}"
+    data-shelter-id="${sidAttr}"
     role="listitem"
     tabindex="0"
-    aria-label="${s.name}, ${tc.label}, ${s.city}${s.distance!==null?' — '+s.distance.toFixed(1)+' miles away':''}"
-    onclick="selectShelter('${sid}')"
-    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShelter('${sid}')}">
+    aria-label="${s.name}, ${tc.label}, ${s.city}${s.distance!==null?' — '+s.distance.toFixed(1)+' miles away':''}">
     <div class="card-body">
       <div class="card-strip" style="background:${tc.color}"></div>
       <div class="card-content">
@@ -860,16 +885,52 @@ function renderCard(s, i){
       </div>
     </div>
     <div class="card-footer">
-      <button class="card-action primary" onclick="event.stopPropagation();openDetail('${sid}')" aria-label="View details for ${s.name}">
+      <button class="card-action primary" data-action="details" data-shelter-id="${sidAttr}" aria-label="View details for ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
         Details
       </button>
-      <button class="card-action" onclick="event.stopPropagation();openDetail('${sid}')" aria-label="Get directions to ${s.name}">
+      <button class="card-action" data-action="directions" data-shelter-id="${sidAttr}" aria-label="Get directions to ${s.name}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         Directions
       </button>
     </div>
   </article>`;
+}
+
+// ────────────────────────────────────────────────────────────
+//  Event delegation for the shelter list.
+//  One listener, attached once, survives every re-render because
+//  it's bound to the parent container (not the cards themselves).
+//  The shelter id is read from the DOM at click time — no stale
+//  closures, no string-escaping hazards from inline onclick.
+// ────────────────────────────────────────────────────────────
+function bindListHandlers() {
+  const list = document.getElementById('shelter-list');
+  if (!list || list._bound) return;
+  list._bound = true;
+
+  list.addEventListener('click', (e) => {
+    // A button inside the card handled first so its id (and not the
+    // article's) is the authoritative one.
+    const btn = e.target.closest('.card-action[data-shelter-id]');
+    if (btn) {
+      e.stopPropagation();
+      openDetail(btn.getAttribute('data-shelter-id'));
+      return;
+    }
+    const card = e.target.closest('.shelter-card[data-shelter-id]');
+    if (card) {
+      selectShelter(card.getAttribute('data-shelter-id'));
+    }
+  });
+
+  list.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const card = e.target.closest('.shelter-card[data-shelter-id]');
+    if (!card || e.target !== card) return;  // only the card itself, not buttons
+    e.preventDefault();
+    selectShelter(card.getAttribute('data-shelter-id'));
+  });
 }
 
 let _lastFocusBeforeDetail = null;
